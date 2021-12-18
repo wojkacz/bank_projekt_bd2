@@ -1,12 +1,10 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2.Loan;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.sql.Date;
 
 @Entity
+@Table
 public class Loan_Info {
 
     @Id
