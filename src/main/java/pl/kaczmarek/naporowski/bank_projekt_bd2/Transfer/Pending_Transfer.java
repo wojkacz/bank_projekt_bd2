@@ -1,6 +1,15 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+@Entity
 public class Pending_Transfer {
+
+    @Id
+    @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Long pending_transfer_id;
     private Long transfer_info_id;
 
@@ -11,6 +20,9 @@ public class Pending_Transfer {
 
     public Pending_Transfer(Long transfer_info_id) {
         this.transfer_info_id = transfer_info_id;
+    }
+
+    public Pending_Transfer() {
     }
 
     @Override

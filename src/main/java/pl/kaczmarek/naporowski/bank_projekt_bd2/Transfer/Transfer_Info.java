@@ -1,8 +1,16 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 import java.sql.Date;
 
+@Entity
 public class Transfer_Info {
+
+    @Id
+    @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Long transfer_info_id;
     private Long sender_account_id;
     private Long receiver_account_id;
@@ -22,6 +30,9 @@ public class Transfer_Info {
         this.receiver_account_id = receiver_account_id;
         this.amount = amount;
         this.date = date;
+    }
+
+    public Transfer_Info() {
     }
 
     @Override

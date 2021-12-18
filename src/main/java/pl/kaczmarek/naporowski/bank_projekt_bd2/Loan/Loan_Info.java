@@ -1,8 +1,16 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2.Loan;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 import java.sql.Date;
 
+@Entity
 public class Loan_Info {
+
+    @Id
+    @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Long loan_info_id;
     private Float amount;
     private Float interest;
@@ -28,6 +36,9 @@ public class Loan_Info {
         this.loan_installment = loan_installment;
         this.account_id = account_id;
         this.date = date;
+    }
+
+    public Loan_Info() {
     }
 
     @Override

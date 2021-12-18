@@ -1,6 +1,15 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2.Loan;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+@Entity
 public class Loan {
+
+    @Id
+    @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Long loan_id;
     private Long loan_info_id;
     private Integer paid_installments;
@@ -17,6 +26,9 @@ public class Loan {
         this.loan_info_id = loan_info_id;
         this.paid_installments = paid_installments;
         this.employee_user_id = employee_user_id;
+    }
+
+    public Loan() {
     }
 
     @Override

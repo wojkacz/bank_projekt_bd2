@@ -1,6 +1,15 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2.User;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+@Entity
 public class User {
+
+    @Id
+    @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Long user_id;
     private String name;
     private String surname;
@@ -23,6 +32,9 @@ public class User {
         this.login = login;
         this.password_hash = password_hash;
         this.permission_level = permission_level;
+    }
+
+    public User() {
     }
 
     @Override
