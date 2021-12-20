@@ -103,6 +103,34 @@ public class Controller {
         }
     }
 
+    @PostMapping(path = "updateUser")
+    public ResponseEntity<String> updateUser(@RequestParam String tokenStr, Long id, String name, String surname, String login, String password_hash){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        int result;
+        if(!userService.isAdmin(userId))
+             result = userService.updateUser(userId, name, surname, login, password_hash);
+        else if(id != null) result = userService.updateUser(id, name, surname, login, password_hash);
+        else result = userService.updateUser(userId, name, surname, login, password_hash);
+        switch(result){
+            case 0:
+                return new ResponseEntity<>("User updated successfully", HttpStatus.OK );
+            case 1:
+                return new ResponseEntity<>("User with that id does not exist!", HttpStatus.NOT_FOUND);
+            case 2:
+                return new ResponseEntity<>("Name too short!", HttpStatus.EXPECTATION_FAILED);
+            case 3:
+                return new ResponseEntity<>("Surname too short!", HttpStatus.EXPECTATION_FAILED);
+            case 4:
+                return new ResponseEntity<>("That login is already taken!", HttpStatus.CONFLICT);
+            default:
+                throw new IllegalStateException("Unknown error!");
+        }
+    }
+
     @PostMapping(path = "refreshToken")
     public ResponseEntity<String> refreshToken(@RequestParam String tokenStr){
         int result = tokenService.refreshTokenTime(tokenStr);

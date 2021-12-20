@@ -81,4 +81,37 @@ public class UserService {
         }
         return false;
     }
+
+    public int updateUser(Long user_id, String name, String surname, String login, String password_hash){
+        if(userRepository.existsById(user_id)) {
+            User user = userRepository.getById(user_id);
+
+            if(name != null) {
+                if(name.length() <= 1)
+                    return 2; // za krotkie imie
+                user.setName(name);
+            }
+
+            if(surname != null) {
+                if(surname.length() <= 1)
+                    return 3; // za krotkie nazwisko
+                user.setSurname(surname);
+            }
+
+            if(login != null){
+                Optional<User> userOptional = userRepository.findUserByLogin(login);
+                if(userOptional.isPresent())
+                    return 4; // istnieje juz taki login
+                user.setLogin(login);
+            }
+
+            if(password_hash != null){
+                user.setPassword_hash(password_hash);
+            }
+
+            userRepository.save(user);
+            return 0; // pomyslnie
+        }
+        return 1; // user z takim id nie istnieje
+    }
 }
