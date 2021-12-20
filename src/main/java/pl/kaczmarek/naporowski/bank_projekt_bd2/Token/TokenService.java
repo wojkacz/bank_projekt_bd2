@@ -65,4 +65,12 @@ public class TokenService {
             if(LocalDateTime.now().isAfter(token.getExpiration_time()))
                 tokenRepository.delete(token);
     }
+
+    public Long getUserIdFromToken(String tokenStr){
+        List<Token> tokens = tokenRepository.findAll();
+        for(Token token : tokens)
+            if(token.getToken().equals(tokenStr))
+                return token.getUser_id();
+        return null;
+    }
 }
