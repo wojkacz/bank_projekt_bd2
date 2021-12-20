@@ -58,4 +58,11 @@ public class TokenService {
         System.out.println("Token does not exist!");
         return 1;
     }
+
+    public void verifyTokens(){
+        List<Token> tokens = tokenRepository.findAll();
+        for(Token token : tokens)
+            if(LocalDateTime.now().isAfter(token.getExpiration_time()))
+                tokenRepository.delete(token);
+    }
 }
