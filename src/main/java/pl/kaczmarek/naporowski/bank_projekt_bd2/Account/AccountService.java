@@ -2,6 +2,8 @@ package pl.kaczmarek.naporowski.bank_projekt_bd2.Account;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Transfer;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.TransferService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,5 +71,4 @@ public class AccountService {
         acc.setBalance_pln(money);
         accountRepository.save(acc);
     }
-
 }

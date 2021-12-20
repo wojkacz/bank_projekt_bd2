@@ -420,4 +420,20 @@ public class Controller {
         userService.setAdmin(id);
     }
 
+    @GetMapping(path = "getTransfers")
+    private ResponseEntity<String> getTransfers(@RequestParam String tokenStr, @RequestParam Long account_id){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        Account acc = accountService.getAccountByID(account_id);
+        if(acc == null) return new ResponseEntity<>("That account does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!acc.getUser_id().equals(userId))
+            return new ResponseEntity<>("This is not your account!", HttpStatus.UNAUTHORIZED);
+
+        return new ResponseEntity<>(transferService.getTransfers(account_id).toString(), HttpStatus.OK);
+    }
+
 }

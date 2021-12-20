@@ -38,4 +38,28 @@ public class Transfer {
                 ", employee_user_id=" + employee_user_id +
                 '}';
     }
+
+    public Long getTransfer_id() {
+        return transfer_id;
+    }
+
+    public void setTransfer_id(Long transfer_id) {
+        this.transfer_id = transfer_id;
+    }
+
+    public Long getTransfer_info_id() {
+        return transfer_info_id;
+    }
+
+    public void setTransfer_info_id(Long transfer_info_id) {
+        this.transfer_info_id = transfer_info_id;
+    }
+
+    public Long getEmployee_user_id() {
+        return employee_user_id;
+    }
+
+    public void setEmployee_user_id(Long employee_user_id) {
+        this.employee_user_id = employee_user_id;
+    }
 }

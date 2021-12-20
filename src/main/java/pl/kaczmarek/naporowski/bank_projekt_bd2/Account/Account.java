@@ -16,9 +16,6 @@ public class Account {
     private Double balance_euro;
     private Double balace_pound;
 
-    @ElementCollection
-    private List<Long> transfer_id = new ArrayList<>();
-
     private Long user_id;
     private Long loan_id;
 
@@ -40,7 +37,6 @@ public class Account {
                 ", balance_usd=" + balance_usd +
                 ", balance_euro=" + balance_euro +
                 ", balace_pound=" + balace_pound +
-                ", transfer_id=" + transfer_id +
                 ", user_id=" + user_id +
                 ", loan_id=" + loan_id +
                 '}';
@@ -84,14 +80,6 @@ public class Account {
 
     public void setBalace_pound(Double balace_pound) {
         this.balace_pound = balace_pound;
-    }
-
-    public List<Long> getTransfer_id() {
-        return transfer_id;
-    }
-
-    public void setTransfer_id(List<Long> transfer_id) {
-        this.transfer_id = transfer_id;
     }
 
     public Long getUser_id() {

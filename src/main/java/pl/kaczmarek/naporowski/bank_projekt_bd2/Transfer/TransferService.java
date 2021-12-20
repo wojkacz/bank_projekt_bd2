@@ -12,6 +12,7 @@ import pl.kaczmarek.naporowski.bank_projekt_bd2.User.UserService;
 import javax.transaction.Transactional;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -22,7 +23,7 @@ public class TransferService {
     AccountService accountService;
     CurrencyService currencyService;
 
-    boolean debug = true;
+    boolean debug = false;
 
     @Autowired
     public TransferService(Pending_TransferRepository pendingTransferRepository, TransferRepository transferRepository, Transfer_InfoRepository transferInfoRepository, AccountService accountService, CurrencyService currencyService) {
@@ -226,5 +227,16 @@ public class TransferService {
         transferInfoRepository.deleteById(pt.getTransfer_info_id());
         pendingTransferRepository.delete(pt);
         return 0;
+    }
+
+    public List<Transfer> getTransfers(Long account_id){
+        List<Transfer> result = new ArrayList<>();
+        List<Transfer> transfers = transferRepository.findAll();
+        for(Transfer transfer : transfers){
+            Transfer_Info transfer_info = transferInfoRepository.getById(transfer.getTransfer_info_id());
+            if(transfer_info.getSender_account_id().equals(account_id) || transfer_info.getReceiver_account_id().equals(account_id))
+                result.add(transfer);
+        }
+        return result;
     }
 }
