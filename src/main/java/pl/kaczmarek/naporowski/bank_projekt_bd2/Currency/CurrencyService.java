@@ -87,8 +87,8 @@ public class CurrencyService {
                             break;
                     }
                     currencyRepository.save(currency);
-                    return 0; // Poprawnie
                 }
+                return 0; // Poprawnie
 
             } catch (JSONException e) {
                 e.printStackTrace();

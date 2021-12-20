@@ -52,7 +52,9 @@ public class TokenService {
     public int refreshTokenTime(String tokenStr){
         Optional<Token> tokenOptional = tokenRepository.findTokenByStr(tokenStr);
         if(tokenOptional.isPresent()) {
-            tokenOptional.get().setExpiration_time(LocalDateTime.now().plusMinutes(15));
+            Token token = tokenOptional.get();
+            token.setExpiration_time(LocalDateTime.now().plusMinutes(15));
+            tokenRepository.save(token);
             return 0;
         }
         System.out.println("Token does not exist!");

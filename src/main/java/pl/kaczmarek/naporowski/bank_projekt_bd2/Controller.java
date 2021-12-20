@@ -137,6 +137,9 @@ public class Controller {
         if(userId == null)
             return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
 
+        if(userService.isAdmin(userId))
+            return new ResponseEntity<>("Admins cant create accounts!", HttpStatus.UNAUTHORIZED);
+
         accountService.createNewAccount(userId);
         return new ResponseEntity<>("Account created successfully!", HttpStatus.OK);
     }
@@ -251,7 +254,7 @@ public class Controller {
         int result = currencyService.updateCurrency(id, name, sellVal, buyVal);
         switch(result){
             case 0:
-                return new ResponseEntity<>("Currency deleted successfully!", HttpStatus.OK);
+                return new ResponseEntity<>("Currency updated successfully!", HttpStatus.OK);
             case 1:
                 return new ResponseEntity<>("Currency with that id does not exist!", HttpStatus.NOT_FOUND);
             case 2:
