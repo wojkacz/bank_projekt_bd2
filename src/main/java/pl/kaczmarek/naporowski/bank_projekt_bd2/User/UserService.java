@@ -73,4 +73,12 @@ public class UserService {
         Optional<User> userOptional = userRepository.findUserByLogin(login);
         return userOptional.orElse(null);
     }
+
+    public boolean isAdmin(Long user_id){
+        if(userRepository.existsById(user_id)) {
+            User user = userRepository.getById(user_id);
+            return user.getPermission_level() > 0;
+        }
+        return false;
+    }
 }

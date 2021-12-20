@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.Account;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.AccountService;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.Currency;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Loan.LoanService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Token.TokenService;
@@ -166,5 +167,100 @@ public class Controller {
         }
     }
 
+    @GetMapping(path = "refreshCurrencies")
+    private ResponseEntity<String> refreshCurrencies(@RequestParam String tokenStr){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!userService.isAdmin(userId))
+            return new ResponseEntity<>("This user is not authorized to refresh currencies!", HttpStatus.UNAUTHORIZED);
+
+        int result = currencyService.updateCurrencies();
+        switch (result){
+            case 0:
+                return new ResponseEntity<>("Values updated successfully", HttpStatus.OK);
+
+            case 1: // Nie udalo sie pobrać
+                return new ResponseEntity<>("Could not get currency values!", HttpStatus.EXPECTATION_FAILED);
+
+            default: // Inne
+                throw new IllegalStateException("Unknown error!");
+        }
+    }
+
+    @GetMapping(path = "getCurrencies")
+    private ResponseEntity<String> getCurrencies(){
+        return new ResponseEntity<>(currencyService.getCurrencies().toString(), HttpStatus.OK);
+    }
+
+    @PostMapping(path = "addCurrency")
+    private ResponseEntity<String> addCurrency(@RequestParam String tokenStr, @RequestParam String name){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!userService.isAdmin(userId))
+            return new ResponseEntity<>("This user is not authorized to add currencies!", HttpStatus.UNAUTHORIZED);
+
+        int result = currencyService.addCurrency(name);
+        switch(result){
+            case 0:
+                return new ResponseEntity<>("Currency added successfully!", HttpStatus.OK);
+            case 1:
+                return new ResponseEntity<>("Currency with that name already exist!", HttpStatus.FOUND);
+            default:
+                throw new IllegalStateException("Unknown error!");
+        }
+
+    }
+
+    @DeleteMapping(path = "deleteCurrency")
+    private ResponseEntity<String> deleteCurrency(@RequestParam String tokenStr, @RequestParam Long id){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!userService.isAdmin(userId))
+            return new ResponseEntity<>("This user is not authorized to delete currencies!", HttpStatus.UNAUTHORIZED);
+
+        int result = currencyService.deleteCurrency(id);
+        switch(result){
+            case 0:
+                return new ResponseEntity<>("Currency deleted successfully!", HttpStatus.OK);
+            case 1:
+                return new ResponseEntity<>("Currency with that id does not exist!", HttpStatus.NOT_FOUND);
+            default:
+                throw new IllegalStateException("Unknown error!");
+        }
+    }
+
+    @PostMapping(path = "updateCurrency")
+    private ResponseEntity<String> updateCurrency(@RequestParam String tokenStr, @RequestParam Long id, String name, Double sellVal, Double buyVal){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!userService.isAdmin(userId))
+            return new ResponseEntity<>("This user is not authorized to update currencies!", HttpStatus.UNAUTHORIZED);
+
+        int result = currencyService.updateCurrency(id, name, sellVal, buyVal);
+        switch(result){
+            case 0:
+                return new ResponseEntity<>("Currency deleted successfully!", HttpStatus.OK);
+            case 1:
+                return new ResponseEntity<>("Currency with that id does not exist!", HttpStatus.NOT_FOUND);
+            case 2:
+                return new ResponseEntity<>("Currency with that name already exist!", HttpStatus.FOUND);
+            case 3:
+                return new ResponseEntity<>("Value is too small!", HttpStatus.EXPECTATION_FAILED);
+            default:
+                throw new IllegalStateException("Unknown error!");
+        }
+    }
 
 }
