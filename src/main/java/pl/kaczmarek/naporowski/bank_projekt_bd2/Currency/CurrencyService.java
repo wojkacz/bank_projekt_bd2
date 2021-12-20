@@ -133,4 +133,10 @@ public class CurrencyService {
         currencyRepository.save(currency);
         return 0;
     }
+
+    public Currency getCurrencyById(Long Id){
+        if(currencyRepository.existsById(Id))
+            return currencyRepository.getById(Id);
+        return null;
+    }
 }

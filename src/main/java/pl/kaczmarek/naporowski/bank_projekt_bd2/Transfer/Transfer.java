@@ -23,6 +23,10 @@ public class Transfer {
         this.employee_user_id = employee_user_id;
     }
 
+    public Transfer(Long transfer_info_id){
+        this.transfer_info_id = transfer_info_id;
+    }
+
     public Transfer() {
     }
 

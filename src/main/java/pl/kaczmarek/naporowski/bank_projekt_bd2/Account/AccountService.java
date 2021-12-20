@@ -24,6 +24,15 @@ public class AccountService {
         return result;
     }
 
+    public List<Account> getAccounts(Long user_id){
+        List<Account> result = new ArrayList<>();
+        List<Account> accounts = accountRepository.findAll();
+        for(Account account : accounts)
+            if(account.getUser_id().equals(user_id))
+                result.add(account);
+        return result;
+    }
+
     public void createNewAccount(Long user_id){
         accountRepository.save(new Account(user_id));
     }
@@ -43,6 +52,22 @@ public class AccountService {
         }
         return 1; // Podane konto nie istnieje
 
+    }
+
+    public Account getAccountByID(Long Id){
+        if(accountRepository.existsById(Id))
+            return accountRepository.getById(Id);
+        return null;
+    }
+
+    public void giveMoney(Long id){
+        Account acc = accountRepository.getById(id);
+        Double money = 10000.0;
+        acc.setBalace_pound(money);
+        acc.setBalance_euro(money);
+        acc.setBalance_usd(money);
+        acc.setBalance_pln(money);
+        accountRepository.save(acc);
     }
 
 }

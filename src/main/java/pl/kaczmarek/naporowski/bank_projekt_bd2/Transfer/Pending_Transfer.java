@@ -30,4 +30,20 @@ public class Pending_Transfer {
                 ", transfer_info_id=" + transfer_info_id +
                 '}';
     }
+
+    public Long getPending_transfer_id() {
+        return pending_transfer_id;
+    }
+
+    public void setPending_transfer_id(Long pending_transfer_id) {
+        this.pending_transfer_id = pending_transfer_id;
+    }
+
+    public Long getTransfer_info_id() {
+        return transfer_info_id;
+    }
+
+    public void setTransfer_info_id(Long transfer_info_id) {
+        this.transfer_info_id = transfer_info_id;
+    }
 }

@@ -3,6 +3,7 @@ package pl.kaczmarek.naporowski.bank_projekt_bd2;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.Currency;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyRepository;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyService;

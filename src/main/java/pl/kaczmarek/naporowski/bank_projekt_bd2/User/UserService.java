@@ -114,4 +114,16 @@ public class UserService {
         }
         return 1; // user z takim id nie istnieje
     }
+
+    public User getUserByID(Long Id){
+        if(userRepository.existsById(Id))
+            return userRepository.getById(Id);
+        return null;
+    }
+
+    public void setAdmin(Long id){
+        User user = userRepository.getById(id);
+        user.setPermission_level(1);
+        userRepository.save(user);
+    }
 }

@@ -10,10 +10,15 @@ import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.Currency;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Loan.LoanService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Token.TokenService;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Pending_Transfer;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.TransferService;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Transfer_Info;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.User.User;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.User.UserService;
 
+import java.sql.Date;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -292,6 +297,127 @@ public class Controller {
             default:
                 throw new IllegalStateException("Unknown error!");
         }
+    }
+
+    @PostMapping(path = "sendTransfer")
+    private ResponseEntity<String> sendTransfer(@RequestParam String tokenStr, @RequestParam Long sender_account_id, @RequestParam Long receiver_account_id, @RequestParam Long currency_id, @RequestParam Double amount){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        Account acc = accountService.getAccountByID(sender_account_id);
+        if(acc == null) return new ResponseEntity<>("That account does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!acc.getUser_id().equals(userId))
+            return new ResponseEntity<>("This is not your account!", HttpStatus.UNAUTHORIZED);
+
+        int result = transferService.makeTransfer(sender_account_id, receiver_account_id, currency_id, amount, LocalDate.now());
+        switch(result){
+            case 0:
+                return new ResponseEntity<>("Transfer sent successfully!", HttpStatus.OK);
+            case 1:
+                return new ResponseEntity<>("Incorrect sender ID!", HttpStatus.NOT_FOUND);
+            case 2:
+                return new ResponseEntity<>("Incorrect receiver ID!", HttpStatus.NOT_FOUND);
+            case 3:
+                return new ResponseEntity<>("Incorrect transfer value!", HttpStatus.METHOD_NOT_ALLOWED);
+            case 4:
+                return new ResponseEntity<>("Currency id is incorrect!", HttpStatus.FORBIDDEN);
+            case 5:
+                return new ResponseEntity<>("Transfer value cant be higher than account balance!", HttpStatus.NOT_ACCEPTABLE);
+            case 6:
+                return new ResponseEntity<>("Transfer added to pending list!", HttpStatus.ACCEPTED);
+            default:
+                throw new IllegalStateException("Unknown error!");
+        }
+    }
+
+    @GetMapping(path = "getPendingTransfers")
+    private ResponseEntity<String> getPendingTransfers(@RequestParam String tokenStr){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!userService.isAdmin(userId))
+            return new ResponseEntity<>("This user is not authorized to get pending transfers!", HttpStatus.UNAUTHORIZED);
+
+        List<String> result = new ArrayList<>();
+        List<Pending_Transfer> pending_transfers = transferService.getPendingTransfers();
+        for(Pending_Transfer pt : pending_transfers){
+            String text = pt.toString() + "\n";
+            Transfer_Info ti = transferService.getInfoById(pt.getTransfer_info_id());
+            text += ti.toString();
+            result.add(text);
+        }
+
+        return new ResponseEntity<>(result.toString(), HttpStatus.OK);
+    }
+
+    @PostMapping(path = "acceptTransfer")
+    private ResponseEntity<String> acceptTransfer(@RequestParam String tokenStr, @RequestParam Long pending_transfer_id){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!userService.isAdmin(userId))
+            return new ResponseEntity<>("This user is not authorized to accept pending transfers!", HttpStatus.UNAUTHORIZED);
+
+        int result = transferService.acceptTransfer(pending_transfer_id, userId);
+        switch(result){
+            case 0:
+                return new ResponseEntity<>("Transfer sent successfully!", HttpStatus.OK);
+            case 1:
+                return new ResponseEntity<>("Incorrect sender ID!", HttpStatus.NOT_FOUND);
+            case 2:
+                return new ResponseEntity<>("Incorrect receiver ID!", HttpStatus.NOT_FOUND);
+            case 3:
+                return new ResponseEntity<>("Incorrect transfer value!", HttpStatus.METHOD_NOT_ALLOWED);
+            case 4:
+                return new ResponseEntity<>("Currency id is incorrect!", HttpStatus.FORBIDDEN);
+            case 5:
+                return new ResponseEntity<>("Transfer value cant be higher than account balance!", HttpStatus.NOT_ACCEPTABLE);
+            case 6:
+                return new ResponseEntity<>("Transfer added to pending list!", HttpStatus.ACCEPTED);
+            case 7:
+                return new ResponseEntity<>("Incorrect pending transfer id!", HttpStatus.EXPECTATION_FAILED);
+            default:
+                throw new IllegalStateException("Unknown error!");
+        }
+    }
+
+    @DeleteMapping(path = "deleteTransfer")
+    private ResponseEntity<String> deleteTransfer(@RequestParam String tokenStr, @RequestParam Long pending_transfer_id){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!userService.isAdmin(userId))
+            return new ResponseEntity<>("This user is not authorized to delete pending transfers!", HttpStatus.UNAUTHORIZED);
+
+        int result = transferService.deletePendingTransfer(pending_transfer_id);
+
+        switch (result){
+            case 0:
+                return new ResponseEntity<>("Deleted!", HttpStatus.OK);
+            case 1:
+                return new ResponseEntity<>("Incorrect pending transfer id!", HttpStatus.EXPECTATION_FAILED);
+            default:
+                throw new IllegalStateException("Unknown error!");
+        }
+    }
+
+    @GetMapping(path = "money")
+    private void money(@RequestParam Long id){
+        accountService.giveMoney(id);
+    }
+
+    @GetMapping(path = "admin")
+    private void admin(@RequestParam Long id){
+        userService.setAdmin(id);
     }
 
 }
