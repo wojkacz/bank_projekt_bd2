@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.Account;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.AccountService;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Pending_Transfer;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Transfer_Info;
 
 import javax.transaction.Transactional;
 import java.time.LocalDate;
@@ -74,6 +76,20 @@ public class LoanService {
         pendingLoanRepository.delete(pending_loan);
 
         return 0;
+    }
+
+    public Loan_Info getInfoByPendingID(Long id){
+        if(!pendingLoanRepository.existsById(id)) return null;
+
+        Pending_Loan pl = pendingLoanRepository.getById(id);
+        return loanInfoRepository.getById(pl.getLoan_info_id());
+    }
+
+    public Loan_Info getInfoByLoanID(Long id){
+        if(!loanRepository.existsById(id)) return null;
+
+        Loan l = loanRepository.getById(id);
+        return loanInfoRepository.getById(l.getLoan_info_id());
     }
 
     public List<Pending_Loan> getPendingLoans(){

@@ -214,10 +214,18 @@ public class TransferService {
         return pendingTransferRepository.findAll();
     }
 
-    public Transfer_Info getInfoById(Long id){
-        if(transferInfoRepository.existsById(id))
-            return transferInfoRepository.getById(id);
-        return null;
+    public Transfer_Info getInfoByLoanId(Long id){
+        if(!transferRepository.existsById(id)) return null;
+
+        Transfer t = transferRepository.getById(id);
+        return transferInfoRepository.getById(t.getTransfer_info_id());
+    }
+
+    public Transfer_Info getInfoByPendingId(Long id){
+        if(!pendingTransferRepository.existsById(id)) return null;
+
+        Pending_Transfer pt = pendingTransferRepository.getById(id);
+        return transferInfoRepository.getById(pt.getTransfer_info_id());
     }
 
     public int deletePendingTransfer(Long id){

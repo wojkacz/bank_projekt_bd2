@@ -11,8 +11,11 @@ import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Email.EmailService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Loan.Loan;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Loan.LoanService;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Loan.Loan_Info;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Loan.Pending_Loan;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Token.TokenService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Pending_Transfer;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Transfer;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.TransferService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Transfer_Info;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.User.User;
@@ -51,7 +54,15 @@ public class Controller {
             case 0: // Poprawny login i haslo
                 User user = userService.getUserByLogin(login);
                 String token = tokenService.newToken(user.getUser_id());
-                return new ResponseEntity<>("Token: " + token + "\n" + user.toString(), HttpStatus.OK);
+
+                String text = "{ \"user-login-data\": { " +
+                        "\"name\": \"" + user.getName() + "\"," +
+                        "\"surname\": \"" + user.getSurname() + "\"," +
+                        "\"login\": \"" + user.getLogin() + "\"," +
+                        "\"permission_level\": " + user.getPermission_level() + "," +
+                        "\"token\": \"" + token + "\" " +
+                        "} }";
+                return new ResponseEntity<>(text, HttpStatus.OK);
 
             case 1: // Niepoprawny login
                 //throw new IllegalStateException("Incorrect login!");
@@ -97,6 +108,9 @@ public class Controller {
 
     @PostMapping(path = "register")
     public ResponseEntity<String> registerUser(@RequestBody User user){
+        if(user.getLogin().indexOf('@') == -1)
+            return new ResponseEntity<>("Login must be email!", HttpStatus.EXPECTATION_FAILED);
+
         int result = userService.addNewUser(user);
         switch (result) {
             case 0: // Poprawna rejestracja
@@ -160,9 +174,24 @@ public class Controller {
         if(userId == null)
             return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
 
-        List<Long> accountIds = accountService.getAccountsId(userId);
-        if(accountIds.isEmpty()) return new ResponseEntity<>("No accounts found for this user!", HttpStatus.EXPECTATION_FAILED);
-        else return new ResponseEntity<>(accountIds.toString(), HttpStatus.OK);
+        List<Account> accounts = accountService.getAccounts(userId);
+        if(accounts.isEmpty()) return new ResponseEntity<>("No accounts found for this user!", HttpStatus.EXPECTATION_FAILED);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("{ ");
+        for(int i = 0; i < accounts.size(); i++){
+            sb.append("\"account_" + (i+1) + "\": {");
+            sb.append("\"account_id\": " + accounts.get(i).getAccount_id() + ", ");
+            sb.append("\"balance_pln\": " + accounts.get(i).getBalance_pln() + ", ");
+            sb.append("\"balance_euro\": " + accounts.get(i).getBalance_euro() + ", ");
+            sb.append("\"balance_pound\": " + accounts.get(i).getBalace_pound() + ", ");
+            sb.append("\"balance_usd\": " + accounts.get(i).getBalance_usd() + " ");
+            if(i == accounts.size()-1) sb.append("} ");
+            else sb.append("}, ");
+        }
+        sb.append('}');
+
+        return new ResponseEntity<>(sb.toString(), HttpStatus.OK);
     }
 
     @PostMapping(path = "createAccount")
@@ -230,7 +259,21 @@ public class Controller {
 
     @GetMapping(path = "getCurrencies")
     private ResponseEntity<String> getCurrencies(){
-        return new ResponseEntity<>(currencyService.getCurrencies().toString(), HttpStatus.OK);
+        List<Currency> currencies = currencyService.getCurrencies();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("{ ");
+        for(int i = 0; i < currencies.size(); i++){
+            sb.append("\"" + currencies.get(i).getName() + "\": {");
+            sb.append("\"currency_id\": " + currencies.get(i).getCurrency_id() + ", ");
+            sb.append("\"buy_price\": " + currencies.get(i).getBuy_price() + ", ");
+            sb.append("\"sell_price\": " + currencies.get(i).getSell_price() + " ");
+            if(i == currencies.size()-1) sb.append("} ");
+            else sb.append("}, ");
+        }
+        sb.append('}');
+
+        return new ResponseEntity<>(sb.toString(), HttpStatus.OK);
     }
 
     @PostMapping(path = "addCurrency")
@@ -345,16 +388,28 @@ public class Controller {
         if(!userService.isAdmin(userId))
             return new ResponseEntity<>("This user is not authorized to get pending transfers!", HttpStatus.UNAUTHORIZED);
 
-        List<String> result = new ArrayList<>();
         List<Pending_Transfer> pending_transfers = transferService.getPendingTransfers();
-        for(Pending_Transfer pt : pending_transfers){
-            String text = pt.toString() + "\n";
-            Transfer_Info ti = transferService.getInfoById(pt.getTransfer_info_id());
-            text += ti.toString();
-            result.add(text);
-        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("{ ");
 
-        return new ResponseEntity<>(result.toString(), HttpStatus.OK);
+        for(int i = 0; i < pending_transfers.size(); i++){
+            Transfer_Info ti = transferService.getInfoByPendingId(pending_transfers.get(i).getTransfer_info_id());
+
+            sb.append("\"pending_transfer_" + (i+1) + "\": {");
+            sb.append("\"pending_transfer_id\": " + pending_transfers.get(i).getPending_transfer_id() + ", ");
+            sb.append("\"transfer_info_id\": " + ti.getTransfer_info_id() + ", ");
+            sb.append("\"sender_account_id\": " + ti.getSender_account_id() + ", ");
+            sb.append("\"receiver_account_id\": " + ti.getReceiver_account_id() + ", ");
+            sb.append("\"currency_id\": " + ti.getCurrency_id() + ", ");
+            sb.append("\"amount\": " + ti.getAmount() + ", ");
+            sb.append("\"date\": \"" + ti.getDate().toString() + "\" ");
+
+            if(i == pending_transfers.size()-1) sb.append("} ");
+            else sb.append("}, ");
+        }
+        sb.append('}');
+
+        return new ResponseEntity<>(sb.toString(), HttpStatus.OK);
     }
 
     @PostMapping(path = "acceptTransfer")
@@ -435,7 +490,26 @@ public class Controller {
         if(!acc.getUser_id().equals(userId))
             return new ResponseEntity<>("This is not your account!", HttpStatus.UNAUTHORIZED);
 
-        return new ResponseEntity<>(transferService.getTransfers(account_id).toString(), HttpStatus.OK);
+        List<Transfer> transfers = transferService.getTransfers(account_id);
+        StringBuilder sb = new StringBuilder();
+        sb.append("{ ");
+
+        for(int i = 0; i < transfers.size(); i++){
+            Transfer_Info ti = transferService.getInfoByLoanId(transfers.get(i).getTransfer_info_id());
+
+            sb.append("\"transfer_" + (i+1) + "\": {");
+            sb.append("\"sender_account_id\": " + ti.getSender_account_id() + ", ");
+            sb.append("\"receiver_account_id\": " + ti.getReceiver_account_id() + ", ");
+            sb.append("\"currency_id\": " + ti.getCurrency_id() + ", ");
+            sb.append("\"amount\": " + ti.getAmount() + ", ");
+            sb.append("\"date\": \"" + ti.getDate().toString() + "\" ");
+
+            if(i == transfers.size()-1) sb.append("} ");
+            else sb.append("}, ");
+        }
+        sb.append('}');
+
+        return new ResponseEntity<>(sb.toString(), HttpStatus.OK);
     }
 
     @PostMapping(path = "takeLoan")
@@ -531,7 +605,58 @@ public class Controller {
         if (!userService.isAdmin(userId))
             return new ResponseEntity<>("This user is not authorized to see pending loans!", HttpStatus.UNAUTHORIZED);
 
-        return new ResponseEntity<>(loanService.getPendingLoans().toString(), HttpStatus.OK);
+        List<Pending_Loan> pending_loans = loanService.getPendingLoans();
+        StringBuilder sb = new StringBuilder();
+        sb.append("{ ");
+
+        for(int i = 0; i < pending_loans.size(); i++){
+            Loan_Info li = loanService.getInfoByPendingID(pending_loans.get(i).getLoan_info_id());
+            Account account = accountService.getAccountByID(li.getAccount_id());
+
+            sb.append("\"pending_loan_" + (i+1) + "\": {");
+            sb.append("\"pending_loan_id\": " + pending_loans.get(i).getPending_loan_id() + ", ");
+            sb.append("\"account_id\": " + li.getAccount_id() + ", ");
+            sb.append("\"user_id\": " + account.getUser_id() + ", ");
+            sb.append("\"amount\": " + li.getAmount() + ", ");
+            sb.append("\"length\": " + li.getLoan_length() + ", ");
+            sb.append("\"to_pay_back\": " + (li.getAmount()*1.1) + ", ");
+            sb.append("\"date\": \"" + li.getDate().toString() + "\" ");
+
+            if(i == pending_loans.size()-1) sb.append("} ");
+            else sb.append("}, ");
+        }
+        sb.append('}');
+
+        return new ResponseEntity<>(sb.toString(), HttpStatus.OK);
+    }
+
+    @GetMapping(path = "getMyLoanInfo")
+    private ResponseEntity<String> getMyLoanInfo(@RequestParam String tokenStr, @RequestParam Long account_id){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        Account acc = accountService.getAccountByID(account_id);
+        if(acc == null) return new ResponseEntity<>("That account does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!acc.getUser_id().equals(userId))
+            return new ResponseEntity<>("This is not your account!", HttpStatus.UNAUTHORIZED);
+
+        Loan loan = loanService.getLoanByAccountID(acc.getAccount_id());
+        if(loan == null) return new ResponseEntity<>("You don't have any loan!", HttpStatus.NOT_FOUND);
+        Loan_Info li = loanService.getInfoByLoanID(loan.getLoan_info_id());
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("{ ");
+        sb.append("\"my_loan_info\": {");
+        sb.append("\"amount\": " + li.getAmount() + ", ");
+        sb.append("\"length\": " + li.getLoan_length() + ", ");
+        sb.append("\"to_pay_back_total\": " + (li.getAmount()*1.1) + ", ");
+        sb.append("\"paid_installements\": " + loan.getPaid_installments() + ", ");
+        sb.append("\"date\": \"" + li.getDate().toString() + "\" } }");
+
+        return new ResponseEntity<>(sb.toString(), HttpStatus.OK);
     }
 
     @PostMapping(path = "payInstallement")

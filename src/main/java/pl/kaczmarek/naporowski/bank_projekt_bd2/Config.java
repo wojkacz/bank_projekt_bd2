@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.Currency;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyRepository;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyService;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.User.User;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.User.UserRepository;
 
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
@@ -41,24 +43,27 @@ public class Config {
                                 "bankappbd2@gmail.com", "ABC123!@#");// Specify the Username and the PassWord
                     }
                 });
-
-
-
         return mailSender;
     }
 
-    /*
+
     @Bean
-    CommandLineRunner commandLineRunner(CurrencyRepository currencyRepository, CurrencyService currencyService) {
+    CommandLineRunner commandLineRunner(CurrencyRepository currencyRepository, CurrencyService currencyService, UserRepository userRepository) {
       return args -> {
           Currency USD = new Currency("USD");
           Currency GBP = new Currency("GBP");
           Currency EUR = new Currency("EUR");
-          currencyRepository.saveAll(
+          currencyRepository.saveAllAndFlush(
                   List.of(USD, GBP, EUR)
           );
           currencyService.updateCurrencies();
+
+          User user = new User("Jan", "Kowalski", "admin", "admin");
+          user.setPermission_level(1);
+          user.setActivated(true);
+
+          userRepository.save(user);
       };
     }
-    */
+
 }
