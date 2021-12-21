@@ -8,6 +8,8 @@ import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.Account;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.AccountService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.Currency;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyService;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Email.EmailService;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Loan.Loan;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Loan.LoanService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Token.TokenService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Pending_Transfer;
@@ -436,4 +438,139 @@ public class Controller {
         return new ResponseEntity<>(transferService.getTransfers(account_id).toString(), HttpStatus.OK);
     }
 
+    @PostMapping(path = "takeLoan")
+    private ResponseEntity<String> takeLoan(@RequestParam String tokenStr, @RequestParam Long account_id, @RequestParam Double amount, @RequestParam int loan_length){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        Account acc = accountService.getAccountByID(account_id);
+        if(acc == null) return new ResponseEntity<>("That account does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!acc.getUser_id().equals(userId))
+            return new ResponseEntity<>("This is not your account!", HttpStatus.UNAUTHORIZED);
+
+        int result = loanService.takeLoan(account_id, amount, loan_length, LocalDate.now());
+        switch(result){
+            case 0:
+                return new ResponseEntity<>("Loan added to pending loans!", HttpStatus.OK);
+
+            case 1:
+                return new ResponseEntity<>("Account does not exist!", HttpStatus.NOT_FOUND);
+
+            case 2:
+                return new ResponseEntity<>("Value of Loan too low!", HttpStatus.EXPECTATION_FAILED);
+
+            case 3:
+                return new ResponseEntity<>("Loan time too short!", HttpStatus.FORBIDDEN);
+
+            case 4:
+                return new ResponseEntity<>("This user already has a loan!", HttpStatus.FORBIDDEN);
+
+            default:
+                throw new IllegalStateException("Unknown error!");
+        }
+    }
+
+    @PostMapping(path = "acceptLoan")
+    private ResponseEntity<String> acceptLoan(@RequestParam String tokenStr, @RequestParam Long pending_loan_id){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!userService.isAdmin(userId))
+            return new ResponseEntity<>("This user is not authorized to accept pending loans!", HttpStatus.UNAUTHORIZED);
+
+        int result = loanService.acceptPendingLoan(pending_loan_id, userId);
+        switch (result){
+            case 0:
+                return new ResponseEntity<>("Loan accepted!", HttpStatus.OK);
+            case 1:
+                return new ResponseEntity<>("Pending Loan ID is incorrect!", HttpStatus.FORBIDDEN);
+            case 2:
+                return new ResponseEntity<>("Loan informations not found!", HttpStatus.NOT_FOUND);
+            case 3:
+                return new ResponseEntity<>("Account not found!", HttpStatus.NOT_FOUND);
+            default:
+                throw new IllegalStateException("Unknown error!");
+        }
+    }
+
+    @DeleteMapping(path = "deletePendingLoan")
+    private ResponseEntity<String> deletePendingLoan(@RequestParam String tokenStr, @RequestParam Long pending_loan_id){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!userService.isAdmin(userId))
+            return new ResponseEntity<>("This user is not authorized to delete pending loans!", HttpStatus.UNAUTHORIZED);
+
+        int result = loanService.deletePendingLoan(pending_loan_id);
+        switch (result){
+            case 0:
+                return new ResponseEntity<>("Loan deleted!", HttpStatus.OK);
+            case 1:
+                return new ResponseEntity<>("Pending Loan ID is incorrect!", HttpStatus.FORBIDDEN);
+            case 2:
+                return new ResponseEntity<>("Loan informations not found!", HttpStatus.NOT_FOUND);
+            default:
+                throw new IllegalStateException("Unknown error!");
+        }
+    }
+
+    @GetMapping(path = "getPendingLoans")
+    private ResponseEntity<String> getPendingLoans(@RequestParam String tokenStr) {
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if (userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if (!userService.isAdmin(userId))
+            return new ResponseEntity<>("This user is not authorized to see pending loans!", HttpStatus.UNAUTHORIZED);
+
+        return new ResponseEntity<>(loanService.getPendingLoans().toString(), HttpStatus.OK);
+    }
+
+    @PostMapping(path = "payInstallement")
+    private ResponseEntity<String> payInstallement(@RequestParam String tokenStr, @RequestParam Long account_id){
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
+
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        Account acc = accountService.getAccountByID(account_id);
+        if(acc == null) return new ResponseEntity<>("That account does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!acc.getUser_id().equals(userId))
+            return new ResponseEntity<>("This is not your account!", HttpStatus.UNAUTHORIZED);
+
+        if(loanService.getLoanByAccountID(account_id) == null)
+            return new ResponseEntity<>("That account does not have loan!", HttpStatus.EXPECTATION_FAILED);
+
+        Loan loan = loanService.getLoanByAccountID(account_id);
+        int result = loanService.payInstallement(loan.getLoan_id());
+        switch(result){
+            case 0:
+                return new ResponseEntity<>("Successfully paid installement!", HttpStatus.OK);
+            case 1:
+                return new ResponseEntity<>("Loan ID is incorrect!", HttpStatus.NOT_FOUND);
+            case 2:
+                return new ResponseEntity<>("Could not get Loan Info!", HttpStatus.EXPECTATION_FAILED);
+            case 3:
+                return new ResponseEntity<>("That account does not exist!", HttpStatus.NOT_FOUND);
+            case 4:
+                return new ResponseEntity<>("That account does not have enough money to pay installement!", HttpStatus.EXPECTATION_FAILED);
+            case 5:
+                throw new IllegalStateException("Unknown error!");
+            case 6:
+                return new ResponseEntity<>("Could not calculate loan installement value!", HttpStatus.EXPECTATION_FAILED);
+            case 7:
+                return new ResponseEntity<>("Successfully paid installement, loan has been bought back!", HttpStatus.OK);
+            default:
+                throw new IllegalStateException("Unknown error!");
+        }
+    }
 }

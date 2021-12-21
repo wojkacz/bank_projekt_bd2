@@ -2,8 +2,6 @@ package pl.kaczmarek.naporowski.bank_projekt_bd2.Account;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Transfer;
-import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.TransferService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,5 +68,33 @@ public class AccountService {
         acc.setBalance_usd(money);
         acc.setBalance_pln(money);
         accountRepository.save(acc);
+    }
+
+    public int addBalanceToAccount(Long id, Double amount){
+        Account account;
+        if(accountRepository.existsById(id)) {
+            account = accountRepository.getById(id);
+            account.setBalance_pln(account.getBalance_pln() + amount);
+            accountRepository.saveAndFlush(account);
+            return 0;
+        }
+        return 1; // nie istnieje
+    }
+
+    public void saveAccounts(List<Account> accs){
+        accountRepository.saveAllAndFlush(accs);
+    }
+
+    public int payInstallement(Long account_id, Double amount){
+        if(!accountRepository.existsById(account_id))
+            return 1; // Nie istnieje
+
+        Account account = accountRepository.getById(account_id);
+        if(account.getBalance_pln() < amount)
+            return 2; // Nie ma wystarczajaco na koncie
+
+        account.setBalance_pln(account.getBalance_pln() - amount);
+        accountRepository.saveAndFlush(account);
+        return 0;
     }
 }

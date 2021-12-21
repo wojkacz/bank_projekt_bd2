@@ -194,6 +194,7 @@ public class TransferService {
             }
         }
         if(debug) System.out.println("[DEBUG] All good");
+        accountService.saveAccounts(List.of(sender, receiver));
         transferRepository.saveAndFlush(transfer);
         if(debug) System.out.println("[DEBUG] Returning");
         return 0;

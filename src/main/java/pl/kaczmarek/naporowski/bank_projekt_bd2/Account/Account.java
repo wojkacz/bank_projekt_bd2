@@ -1,8 +1,6 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2.Account;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table
@@ -17,7 +15,6 @@ public class Account {
     private Double balace_pound;
 
     private Long user_id;
-    private Long loan_id;
 
     public Account(Long user_id) {
         this.user_id = user_id;
@@ -38,7 +35,6 @@ public class Account {
                 ", balance_euro=" + balance_euro +
                 ", balace_pound=" + balace_pound +
                 ", user_id=" + user_id +
-                ", loan_id=" + loan_id +
                 '}';
     }
 
@@ -88,13 +84,5 @@ public class Account {
 
     public void setUser_id(Long user_id) {
         this.user_id = user_id;
-    }
-
-    public Long getLoan_id() {
-        return loan_id;
-    }
-
-    public void setLoan_id(Long loan_id) {
-        this.loan_id = loan_id;
     }
 }

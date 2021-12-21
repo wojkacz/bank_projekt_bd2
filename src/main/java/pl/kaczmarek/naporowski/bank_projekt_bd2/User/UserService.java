@@ -1,17 +1,21 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2.User;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Email.EmailService;
 
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Consumer;
 
 @Service
 public class UserService {
     UserRepository userRepository;
+    EmailService emailService;
 
     @Autowired
-    public UserService(UserRepository userRepository) { this.userRepository = userRepository; }
+    public UserService(UserRepository userRepository, EmailService emailService) { this.userRepository = userRepository; this.emailService = emailService; }
 
     public int addNewUser(User user) {
         Optional<User> userOptional = userRepository.findUserByLogin(user.getLogin());
@@ -26,7 +30,7 @@ public class UserService {
             actCode.append(random.nextInt(10));
 
         user.setActivationCode(actCode.toString());
-        // SEND EMAIL WITH CODE
+        emailService.send(user.getLogin(), "Verification Code is: " + actCode.toString());
         userRepository.save(user);
 
         return 0;

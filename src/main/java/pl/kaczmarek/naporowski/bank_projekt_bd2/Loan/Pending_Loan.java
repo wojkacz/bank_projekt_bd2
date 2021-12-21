@@ -30,4 +30,20 @@ public class Pending_Loan {
                 ", loan_info_id=" + loan_info_id +
                 '}';
     }
+
+    public Long getPending_loan_id() {
+        return pending_loan_id;
+    }
+
+    public void setPending_loan_id(Long pending_loan_id) {
+        this.pending_loan_id = pending_loan_id;
+    }
+
+    public Long getLoan_info_id() {
+        return loan_info_id;
+    }
+
+    public void setLoan_info_id(Long loan_info_id) {
+        this.loan_info_id = loan_info_id;
+    }
 }
