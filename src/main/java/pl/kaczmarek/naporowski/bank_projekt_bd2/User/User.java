@@ -16,7 +16,6 @@ public class User {
     private int permission_level;
 
     private boolean isActivated;
-    private String activationCode;
 
     public User(Long user_id, String name, String surname, String login, String password_hash, int permission_level) {
         this.user_id = user_id;
@@ -58,14 +57,6 @@ public class User {
 
     public void setActivated(boolean activated) {
         isActivated = activated;
-    }
-
-    public String getActivationCode() {
-        return activationCode;
-    }
-
-    public void setActivationCode(String activationCode) {
-        this.activationCode = activationCode;
     }
 
     public Long getUser_id() {

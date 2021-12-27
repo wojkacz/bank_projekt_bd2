@@ -42,6 +42,13 @@ public class TokenService {
     }
 
     public String newToken(Long user_id){
+        Optional<Token> tokenOptional = tokenRepository.findTokenByUserID(user_id);
+        if(tokenOptional.isPresent()) {
+            String tokenStr = tokenOptional.get().getToken();
+            refreshTokenTime(tokenStr);
+            return tokenStr;
+        }
+
         Token token = new Token(user_id);
         String tokenStr = generateTokenString();
         token.setToken(tokenStr);

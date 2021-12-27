@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Component;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Code.VerifyCodeThread;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Token.VerifyTokenThread;
 
 @Component
@@ -20,7 +21,9 @@ public class Executor {
     @EventListener(ApplicationReadyEvent.class)
     public void atStartup() {
         VerifyTokenThread verifyTokenThread = applicationContext.getBean(VerifyTokenThread.class);
+        VerifyCodeThread verifyCodeThread = applicationContext.getBean(VerifyCodeThread.class);
         taskExecutor.execute(verifyTokenThread);
-        System.out.println("Thread created successfully!");
+        taskExecutor.execute(verifyCodeThread);
+        System.out.println("Threads created successfully!");
     }
 }

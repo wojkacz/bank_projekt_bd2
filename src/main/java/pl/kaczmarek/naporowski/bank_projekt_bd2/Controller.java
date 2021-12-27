@@ -25,6 +25,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping
@@ -47,6 +48,9 @@ public class Controller {
         this.tokenService = tokenService;
     }
 
+    @PostMapping(path = "forgotPassword")
+    public ResponseEntity<String> forgotPassword(@RequestParam String login){ return null; }
+
     @PostMapping(path = "login")
     public ResponseEntity<String> login(@RequestParam String login, @RequestParam String password){
         int result = userService.login(login, password);
@@ -65,15 +69,12 @@ public class Controller {
                 return new ResponseEntity<>(text, HttpStatus.OK);
 
             case 1: // Niepoprawny login
-                //throw new IllegalStateException("Incorrect login!");
                 return new ResponseEntity<>("Incorrect login!", HttpStatus.NOT_FOUND);
 
             case 2: // Niepoprawne hasło
-                //throw new IllegalStateException("Incorrect Password for user " + login);
                 return new ResponseEntity<>("Incorrect Password for user " + login, HttpStatus.EXPECTATION_FAILED);
 
             case 3: // Nieaktywny uzytkownik
-                //throw new IllegalStateException("User inactive!");
                 return new ResponseEntity<>("User inactive!", HttpStatus.METHOD_NOT_ALLOWED);
 
             default: // Inne
@@ -90,15 +91,12 @@ public class Controller {
                 return new ResponseEntity<>("User activated!", HttpStatus.OK);
 
             case 1: // Niepoprawny login
-                //throw new IllegalStateException("Incorrect login!");
                 return new ResponseEntity<>("User not found!", HttpStatus.NOT_FOUND);
 
             case 2: // Juz aktywowany
-                //throw new IllegalStateException("User " + login + " is already activated!");
                 return new ResponseEntity<>("User " + login + " is already activated!", HttpStatus.METHOD_NOT_ALLOWED);
 
             case 3: // Zły kod
-                //throw new IllegalStateException("Incorrect activation code!");
                 return new ResponseEntity<>("Incorrect activation code!", HttpStatus.EXPECTATION_FAILED);
 
             default: // Inne
@@ -107,20 +105,21 @@ public class Controller {
     }
 
     @PostMapping(path = "register")
-    public ResponseEntity<String> registerUser(@RequestBody User user){
-        if(user.getLogin().indexOf('@') == -1)
+    public ResponseEntity<String> registerUser(@RequestParam String name, @RequestParam String surname, @RequestParam String login, @RequestParam String password){
+        if(login.indexOf('@') == -1)
             return new ResponseEntity<>("Login must be email!", HttpStatus.EXPECTATION_FAILED);
 
-        int result = userService.addNewUser(user);
+        int result = userService.addNewUser(name, surname, login, password);
         switch (result) {
             case 0: // Poprawna rejestracja
                 return new ResponseEntity<>("User registered!", HttpStatus.OK);
 
             case 1: // Login juz istnieje
-                return new ResponseEntity<>("User with that login already exist!", HttpStatus.EXPECTATION_FAILED);
+                return new ResponseEntity<>("User with that login already exist!", HttpStatus.FOUND);
 
             default: // Inne
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
+                //throw new IllegalStateException("Unknown error!");
         }
     }
 
@@ -134,8 +133,7 @@ public class Controller {
         int result;
         if(!userService.isAdmin(userId))
              result = userService.updateUser(userId, name, surname, login, password_hash);
-        else if(id != null) result = userService.updateUser(id, name, surname, login, password_hash);
-        else result = userService.updateUser(userId, name, surname, login, password_hash);
+        else result = userService.updateUser(Objects.requireNonNullElse(id, userId), name, surname, login, password_hash);
         switch(result){
             case 0:
                 return new ResponseEntity<>("User updated successfully", HttpStatus.OK );
@@ -146,7 +144,11 @@ public class Controller {
             case 3:
                 return new ResponseEntity<>("Surname too short!", HttpStatus.EXPECTATION_FAILED);
             case 4:
+                return new ResponseEntity<>("Login too short!", HttpStatus.EXPECTATION_FAILED);
+            case 5:
                 return new ResponseEntity<>("That login is already taken!", HttpStatus.CONFLICT);
+            case 6:
+                return new ResponseEntity<>("Password Hash too short!", HttpStatus.EXPECTATION_FAILED);
             default:
                 throw new IllegalStateException("Unknown error!");
         }
@@ -175,17 +177,17 @@ public class Controller {
             return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
 
         List<Account> accounts = accountService.getAccounts(userId);
-        if(accounts.isEmpty()) return new ResponseEntity<>("No accounts found for this user!", HttpStatus.EXPECTATION_FAILED);
+        if(accounts.isEmpty()) return new ResponseEntity<>("No accounts found for this user!", HttpStatus.NOT_FOUND);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("{ ");
+        sb.append("{ \"data\": {").append("\"amount\": ").append(accounts.size()).append("}, ");
         for(int i = 0; i < accounts.size(); i++){
-            sb.append("\"account_" + (i+1) + "\": {");
-            sb.append("\"account_id\": " + accounts.get(i).getAccount_id() + ", ");
-            sb.append("\"balance_pln\": " + accounts.get(i).getBalance_pln() + ", ");
-            sb.append("\"balance_euro\": " + accounts.get(i).getBalance_euro() + ", ");
-            sb.append("\"balance_pound\": " + accounts.get(i).getBalace_pound() + ", ");
-            sb.append("\"balance_usd\": " + accounts.get(i).getBalance_usd() + " ");
+            sb.append("\"account_").append(i + 1).append("\": {");
+            sb.append("\"account_id\": ").append(accounts.get(i).getAccount_id()).append(", ");
+            sb.append("\"balance_pln\": ").append(accounts.get(i).getBalance_pln()).append(", ");
+            sb.append("\"balance_euro\": ").append(accounts.get(i).getBalance_euro()).append(", ");
+            sb.append("\"balance_pound\": ").append(accounts.get(i).getBalace_pound()).append(", ");
+            sb.append("\"balance_usd\": ").append(accounts.get(i).getBalance_usd()).append(" ");
             if(i == accounts.size()-1) sb.append("} ");
             else sb.append("}, ");
         }
@@ -194,12 +196,19 @@ public class Controller {
         return new ResponseEntity<>(sb.toString(), HttpStatus.OK);
     }
 
+    @GetMapping("connectionCheck")
+    public ResponseEntity<String> checkConnection(){
+        return new ResponseEntity<>("Connection good!", HttpStatus.OK);
+    }
+
     @PostMapping(path = "createAccount")
     public ResponseEntity<String> createAccount(@RequestParam String tokenStr){
         Long userId = tokenService.getUserIdFromToken(tokenStr);
 
         if(userId == null)
             return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        refreshToken(tokenStr);
 
         if(userService.isAdmin(userId))
             return new ResponseEntity<>("Admins cant create accounts!", HttpStatus.UNAUTHORIZED);
@@ -264,10 +273,10 @@ public class Controller {
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
         for(int i = 0; i < currencies.size(); i++){
-            sb.append("\"" + currencies.get(i).getName() + "\": {");
-            sb.append("\"currency_id\": " + currencies.get(i).getCurrency_id() + ", ");
-            sb.append("\"buy_price\": " + currencies.get(i).getBuy_price() + ", ");
-            sb.append("\"sell_price\": " + currencies.get(i).getSell_price() + " ");
+            sb.append("\"").append(currencies.get(i).getName()).append("\": {");
+            sb.append("\"currency_id\": ").append(currencies.get(i).getCurrency_id()).append(", ");
+            sb.append("\"buy_price\": ").append(currencies.get(i).getBuy_price()).append(", ");
+            sb.append("\"sell_price\": ").append(currencies.get(i).getSell_price()).append(" ");
             if(i == currencies.size()-1) sb.append("} ");
             else sb.append("}, ");
         }
@@ -351,6 +360,8 @@ public class Controller {
         if(userId == null)
             return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
 
+        refreshToken(tokenStr);
+
         Account acc = accountService.getAccountByID(sender_account_id);
         if(acc == null) return new ResponseEntity<>("That account does not exist!", HttpStatus.EXPECTATION_FAILED);
 
@@ -372,6 +383,8 @@ public class Controller {
             case 5:
                 return new ResponseEntity<>("Transfer value cant be higher than account balance!", HttpStatus.NOT_ACCEPTABLE);
             case 6:
+                return new ResponseEntity<>("Incorrect currency [Has to be one of GPB,USD or EUR]!", HttpStatus.NOT_FOUND);
+            case 7:
                 return new ResponseEntity<>("Transfer added to pending list!", HttpStatus.ACCEPTED);
             default:
                 throw new IllegalStateException("Unknown error!");
@@ -395,14 +408,14 @@ public class Controller {
         for(int i = 0; i < pending_transfers.size(); i++){
             Transfer_Info ti = transferService.getInfoByPendingId(pending_transfers.get(i).getTransfer_info_id());
 
-            sb.append("\"pending_transfer_" + (i+1) + "\": {");
-            sb.append("\"pending_transfer_id\": " + pending_transfers.get(i).getPending_transfer_id() + ", ");
-            sb.append("\"transfer_info_id\": " + ti.getTransfer_info_id() + ", ");
-            sb.append("\"sender_account_id\": " + ti.getSender_account_id() + ", ");
-            sb.append("\"receiver_account_id\": " + ti.getReceiver_account_id() + ", ");
-            sb.append("\"currency_id\": " + ti.getCurrency_id() + ", ");
-            sb.append("\"amount\": " + ti.getAmount() + ", ");
-            sb.append("\"date\": \"" + ti.getDate().toString() + "\" ");
+            sb.append("\"pending_transfer_").append(i + 1).append("\": {");
+            sb.append("\"pending_transfer_id\": ").append(pending_transfers.get(i).getPending_transfer_id()).append(", ");
+            sb.append("\"transfer_info_id\": ").append(ti.getTransfer_info_id()).append(", ");
+            sb.append("\"sender_account_id\": ").append(ti.getSender_account_id()).append(", ");
+            sb.append("\"receiver_account_id\": ").append(ti.getReceiver_account_id()).append(", ");
+            sb.append("\"currency_id\": ").append(ti.getCurrency_id()).append(", ");
+            sb.append("\"amount\": ").append(ti.getAmount()).append(", ");
+            sb.append("\"date\": \"").append(ti.getDate().toString()).append("\" ");
 
             if(i == pending_transfers.size()-1) sb.append("} ");
             else sb.append("}, ");
@@ -484,6 +497,8 @@ public class Controller {
         if(userId == null)
             return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
 
+        refreshToken(tokenStr);
+
         Account acc = accountService.getAccountByID(account_id);
         if(acc == null) return new ResponseEntity<>("That account does not exist!", HttpStatus.EXPECTATION_FAILED);
 
@@ -497,12 +512,12 @@ public class Controller {
         for(int i = 0; i < transfers.size(); i++){
             Transfer_Info ti = transferService.getInfoByLoanId(transfers.get(i).getTransfer_info_id());
 
-            sb.append("\"transfer_" + (i+1) + "\": {");
-            sb.append("\"sender_account_id\": " + ti.getSender_account_id() + ", ");
-            sb.append("\"receiver_account_id\": " + ti.getReceiver_account_id() + ", ");
-            sb.append("\"currency_id\": " + ti.getCurrency_id() + ", ");
-            sb.append("\"amount\": " + ti.getAmount() + ", ");
-            sb.append("\"date\": \"" + ti.getDate().toString() + "\" ");
+            sb.append("\"transfer_").append(i + 1).append("\": {");
+            sb.append("\"sender_account_id\": ").append(ti.getSender_account_id()).append(", ");
+            sb.append("\"receiver_account_id\": ").append(ti.getReceiver_account_id()).append(", ");
+            sb.append("\"currency_id\": ").append(ti.getCurrency_id()).append(", ");
+            sb.append("\"amount\": ").append(ti.getAmount()).append(", ");
+            sb.append("\"date\": \"").append(ti.getDate().toString()).append("\" ");
 
             if(i == transfers.size()-1) sb.append("} ");
             else sb.append("}, ");
@@ -518,6 +533,8 @@ public class Controller {
 
         if(userId == null)
             return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        refreshToken(tokenStr);
 
         Account acc = accountService.getAccountByID(account_id);
         if(acc == null) return new ResponseEntity<>("That account does not exist!", HttpStatus.EXPECTATION_FAILED);
@@ -637,6 +654,8 @@ public class Controller {
         if(userId == null)
             return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
 
+        refreshToken(tokenStr);
+
         Account acc = accountService.getAccountByID(account_id);
         if(acc == null) return new ResponseEntity<>("That account does not exist!", HttpStatus.EXPECTATION_FAILED);
 
@@ -665,6 +684,8 @@ public class Controller {
 
         if(userId == null)
             return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        refreshToken(tokenStr);
 
         Account acc = accountService.getAccountByID(account_id);
         if(acc == null) return new ResponseEntity<>("That account does not exist!", HttpStatus.EXPECTATION_FAILED);
