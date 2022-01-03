@@ -18,7 +18,7 @@ public class Token {
 
     public Token(Long user_id) {
         this.user_id = user_id;
-        this.expiration_time = LocalDateTime.now().plusMinutes(15);
+        this.expiration_time = LocalDateTime.now().plusMinutes(1);
         this.token = "";
     }
 

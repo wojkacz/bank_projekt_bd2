@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.Account;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.AccountService;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Code.CodeService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.Currency;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Email.EmailService;
@@ -37,19 +38,34 @@ public class Controller {
     TransferService transferService;
     LoanService loanService;
     TokenService tokenService;
+    CodeService codeService;
 
     @Autowired
-    public Controller(UserService userService, AccountService accountService, CurrencyService currencyService, TransferService transferService, LoanService loanService, TokenService tokenService) {
+    public Controller(CodeService codeService, UserService userService, AccountService accountService, CurrencyService currencyService, TransferService transferService, LoanService loanService, TokenService tokenService) {
         this.userService = userService;
         this.accountService = accountService;
         this.currencyService = currencyService;
         this.transferService = transferService;
         this.loanService = loanService;
         this.tokenService = tokenService;
+        this.codeService = codeService;
     }
 
     @PostMapping(path = "forgotPassword")
-    public ResponseEntity<String> forgotPassword(@RequestParam String login){ return null; }
+    public ResponseEntity<String> forgotPassword(@RequestParam String login, String code){
+
+        if(code == null){
+            int result = userService.forgetPasswordSendCode(login);
+            if(result == 0) return new ResponseEntity<>("Code sent!", HttpStatus.OK);
+            else return new ResponseEntity<>("Incorrect login!", HttpStatus.NOT_FOUND);
+        }
+
+        int result = userService.forgetPasswordVerifyCode(login, code);
+        if(result == 0) return new ResponseEntity<>("Password changed!", HttpStatus.OK);
+        else if(result == 1) return new ResponseEntity<>("Incorrect login!", HttpStatus.NOT_FOUND);
+        else if(result == 2) return new ResponseEntity<>("Incorrect code!", HttpStatus.EXPECTATION_FAILED);
+        throw new IllegalStateException("Unknown error!");
+    }
 
     @PostMapping(path = "login")
     public ResponseEntity<String> login(@RequestParam String login, @RequestParam String password){

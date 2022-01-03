@@ -27,13 +27,42 @@ public class CodeService {
         } while(codeRepository.findByCode(codeStr).isPresent());
         Code code = new Code(user_id, 1, codeStr);
 
-        emailService.send(email, "Verification Code is: " + codeStr + "\nCode expires in 15 minutes.");
+        emailService.send(email, "Account activation\nActivation Code is: " + codeStr + "\nCode expires in 15 minutes.");
         codeRepository.save(code);
+    }
+
+    public void sendVerificationCode(Long user_id, String email){
+        String codeStr;
+        do {
+            codeStr = generateCode();
+        } while(codeRepository.findByCode(codeStr).isPresent());
+        Code code = new Code(user_id, 2, codeStr);
+        emailService.send(email, "Forget password verification\nVerification Code is: " + codeStr + "\nCode expires in 15 minutes.");
+        codeRepository.save(code);
+    }
+
+    public boolean checkVerificationCode(Long user_id, String code){
+        Optional<Code> codeOptional = codeRepository.findByCode(code);
+        if(codeOptional.isEmpty())
+            return false;
+
+        if(!codeOptional.get().getUser_id().equals(user_id))
+            return false;
+
+        if(codeOptional.get().getType() == 2){
+            codeRepository.delete(codeOptional.get());
+            return true;
+        }
+        return false;
     }
 
     public boolean checkActivationCode(Long user_id, String code){
         Optional<Code> codeOptional = codeRepository.findByCode(code);
-        if(codeOptional.isEmpty()) return false;
+        if(codeOptional.isEmpty())
+            return false;
+
+        if(!codeOptional.get().getUser_id().equals(user_id))
+            return false;
 
         if(codeOptional.get().getType() == 1){
             codeRepository.delete(codeOptional.get());
