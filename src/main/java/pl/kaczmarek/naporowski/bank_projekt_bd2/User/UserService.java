@@ -131,38 +131,40 @@ public class UserService {
         return userOptional.get().getPermission_level() > 0;
     }
 
-    public int updateUser(Long user_id, String name, String surname, String login, String password_hash){
+    public int updateUser(Long user_id, String password_hash, String name, String surname, String login, String new_password_hash){
         Optional<User> userOptional = userRepository.findUserByID(user_id);
         if(userOptional.isEmpty()) return 1;
 
         User user = userOptional.get();
+        if(!user.getPassword_hash().equals(password_hash))
+            return 2; // Niepoprawne hasło
 
         if(name != null) {
             if(name.length() <= 1)
-                return 2; // Za krotkie imie
+                return 3; // Za krotkie imie
             user.setName(name);
         }
 
         if(surname != null) {
             if(surname.length() <= 1)
-                return 3; // Za krotkie nazwisko
+                return 4; // Za krotkie nazwisko
             user.setSurname(surname);
         }
 
         if(login != null){
             if(login.length() <= 1)
-                return 4; // Za krótki login
+                return 5; // Za krótki login
 
             if(userRepository.findUserByLogin(login).isPresent())
-                return 5; // Istnieje juz taki login
+                return 6; // Istnieje juz taki login
 
             user.setLogin(login);
         }
 
-        if(password_hash != null){
-            if(password_hash.length() <= 1)
-                return 6; // Za krotki hasz
-            user.setPassword_hash(password_hash);
+        if(new_password_hash != null){
+            if(new_password_hash.length() <= 1)
+                return 7; // Za krotki hasz
+            user.setPassword_hash(new_password_hash);
         }
 
         userRepository.save(user);

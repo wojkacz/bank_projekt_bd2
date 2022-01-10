@@ -140,31 +140,33 @@ public class Controller {
     }
 
     @PostMapping(path = "updateUser")
-    public ResponseEntity<String> updateUser(@RequestParam String tokenStr, Long id, String name, String surname, String login, String password_hash){
+    public ResponseEntity<String> updateUser(@RequestParam String tokenStr, @RequestParam String password_hash, String name, String surname, String login, String new_password_hash){
         Long userId = tokenService.getUserIdFromToken(tokenStr);
 
         if(userId == null)
-            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.NOT_FOUND);
 
-        int result;
-        if(!userService.isAdmin(userId))
-             result = userService.updateUser(userId, name, surname, login, password_hash);
-        else result = userService.updateUser(Objects.requireNonNullElse(id, userId), name, surname, login, password_hash);
+        if(login != null && login.indexOf('@') == -1)
+            return new ResponseEntity<>("Login must be email!", HttpStatus.EXPECTATION_FAILED);
+
+        int result = userService.updateUser(userId, password_hash, name, surname, login, new_password_hash);;
         switch(result){
             case 0:
                 return new ResponseEntity<>("User updated successfully", HttpStatus.OK );
             case 1:
-                return new ResponseEntity<>("User with that id does not exist!", HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>("Incorrect password!", HttpStatus.FORBIDDEN);
             case 2:
-                return new ResponseEntity<>("Name too short!", HttpStatus.EXPECTATION_FAILED);
+                return new ResponseEntity<>("User with that id does not exist!", HttpStatus.FORBIDDEN);
             case 3:
-                return new ResponseEntity<>("Surname too short!", HttpStatus.EXPECTATION_FAILED);
+                return new ResponseEntity<>("Name too short!", HttpStatus.NOT_ACCEPTABLE);
             case 4:
-                return new ResponseEntity<>("Login too short!", HttpStatus.EXPECTATION_FAILED);
+                return new ResponseEntity<>("Surname too short!", HttpStatus.NOT_ACCEPTABLE);
             case 5:
-                return new ResponseEntity<>("That login is already taken!", HttpStatus.CONFLICT);
+                return new ResponseEntity<>("Login too short!", HttpStatus.NOT_ACCEPTABLE);
             case 6:
-                return new ResponseEntity<>("Password Hash too short!", HttpStatus.EXPECTATION_FAILED);
+                return new ResponseEntity<>("That login is already taken!", HttpStatus.CONFLICT);
+            case 7:
+                return new ResponseEntity<>("Password Hash too short!", HttpStatus.NOT_ACCEPTABLE);
             default:
                 throw new IllegalStateException("Unknown error!");
         }
@@ -646,14 +648,14 @@ public class Controller {
             Loan_Info li = loanService.getInfoByPendingID(pending_loans.get(i).getLoan_info_id());
             Account account = accountService.getAccountByID(li.getAccount_id());
 
-            sb.append("\"pending_loan_" + (i+1) + "\": {");
-            sb.append("\"pending_loan_id\": " + pending_loans.get(i).getPending_loan_id() + ", ");
-            sb.append("\"account_id\": " + li.getAccount_id() + ", ");
-            sb.append("\"user_id\": " + account.getUser_id() + ", ");
-            sb.append("\"amount\": " + li.getAmount() + ", ");
-            sb.append("\"length\": " + li.getLoan_length() + ", ");
-            sb.append("\"to_pay_back\": " + (li.getAmount()*1.1) + ", ");
-            sb.append("\"date\": \"" + li.getDate().toString() + "\" ");
+            sb.append("\"pending_loan_").append(i + 1).append("\": {");
+            sb.append("\"pending_loan_id\": ").append(pending_loans.get(i).getPending_loan_id()).append(", ");
+            sb.append("\"account_id\": ").append(li.getAccount_id()).append(", ");
+            sb.append("\"user_id\": ").append(account.getUser_id()).append(", ");
+            sb.append("\"amount\": ").append(li.getAmount()).append(", ");
+            sb.append("\"length\": ").append(li.getLoan_length()).append(", ");
+            sb.append("\"to_pay_back\": ").append(li.getAmount() * 1.1).append(", ");
+            sb.append("\"date\": \"").append(li.getDate().toString()).append("\" ");
 
             if(i == pending_loans.size()-1) sb.append("} ");
             else sb.append("}, ");
@@ -685,11 +687,11 @@ public class Controller {
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
         sb.append("\"my_loan_info\": {");
-        sb.append("\"amount\": " + li.getAmount() + ", ");
-        sb.append("\"length\": " + li.getLoan_length() + ", ");
-        sb.append("\"to_pay_back_total\": " + (li.getAmount()*1.1) + ", ");
-        sb.append("\"paid_installements\": " + loan.getPaid_installments() + ", ");
-        sb.append("\"date\": \"" + li.getDate().toString() + "\" } }");
+        sb.append("\"amount\": ").append(li.getAmount()).append(", ");
+        sb.append("\"length\": ").append(li.getLoan_length()).append(", ");
+        sb.append("\"to_pay_back_total\": ").append(li.getAmount() * 1.1).append(", ");
+        sb.append("\"paid_installements\": ").append(loan.getPaid_installments()).append(", ");
+        sb.append("\"date\": \"").append(li.getDate().toString()).append("\" } }");
 
         return new ResponseEntity<>(sb.toString(), HttpStatus.OK);
     }
@@ -725,8 +727,6 @@ public class Controller {
                 return new ResponseEntity<>("That account does not exist!", HttpStatus.NOT_FOUND);
             case 4:
                 return new ResponseEntity<>("That account does not have enough money to pay installement!", HttpStatus.EXPECTATION_FAILED);
-            case 5:
-                throw new IllegalStateException("Unknown error!");
             case 6:
                 return new ResponseEntity<>("Could not calculate loan installement value!", HttpStatus.EXPECTATION_FAILED);
             case 7:
