@@ -1,7 +1,6 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer;
 
 import javax.persistence.*;
-import java.sql.Date;
 import java.time.LocalDate;
 
 @Entity

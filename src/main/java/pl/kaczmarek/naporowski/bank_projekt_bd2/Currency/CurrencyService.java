@@ -3,6 +3,7 @@ package pl.kaczmarek.naporowski.bank_projekt_bd2.Currency;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -16,6 +17,9 @@ import java.util.Optional;
 public class CurrencyService {
 
     CurrencyRepository currencyRepository;
+
+    @Autowired
+    private Environment environment;
 
     @Autowired
     public CurrencyService(CurrencyRepository currencyRepository) {
@@ -34,7 +38,7 @@ public class CurrencyService {
     public String getCurrenciesFromApi() {
         try {
             StringBuilder result = new StringBuilder();
-            URL url = new URL("https://freecurrencyapi.net/api/v2/latest?apikey=9a1b77a0-61a7-11ec-8e36-61c2b2616836&base_currency=pln");
+            URL url = new URL("https://freecurrencyapi.net/api/v2/latest?apikey=" + environment.getProperty("freeCurrencyAPI.token") + "&base_currency=pln");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
 

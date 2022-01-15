@@ -1,6 +1,7 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -146,6 +147,8 @@ public class Controller {
         if(userId == null)
             return new ResponseEntity<>("That token does not exist!", HttpStatus.NOT_FOUND);
 
+        refreshToken(tokenStr);
+
         if(login != null && login.indexOf('@') == -1)
             return new ResponseEntity<>("Login must be email!", HttpStatus.EXPECTATION_FAILED);
 
@@ -193,6 +196,8 @@ public class Controller {
 
         if(userId == null)
             return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        refreshToken(tokenStr);
 
         List<Account> accounts = accountService.getAccounts(userId);
         if(accounts.isEmpty()) return new ResponseEntity<>("No accounts found for this user!", HttpStatus.NOT_FOUND);
@@ -419,6 +424,8 @@ public class Controller {
         if(!userService.isAdmin(userId))
             return new ResponseEntity<>("This user is not authorized to get pending transfers!", HttpStatus.UNAUTHORIZED);
 
+        refreshToken(tokenStr);
+
         List<Pending_Transfer> pending_transfers = transferService.getPendingTransfers();
         StringBuilder sb = new StringBuilder();
         sb.append("{ ");
@@ -453,6 +460,8 @@ public class Controller {
         if(!userService.isAdmin(userId))
             return new ResponseEntity<>("This user is not authorized to accept pending transfers!", HttpStatus.UNAUTHORIZED);
 
+        refreshToken(tokenStr);
+
         int result = transferService.acceptTransfer(pending_transfer_id, userId);
         switch(result){
             case 0:
@@ -486,6 +495,8 @@ public class Controller {
         if(!userService.isAdmin(userId))
             return new ResponseEntity<>("This user is not authorized to delete pending transfers!", HttpStatus.UNAUTHORIZED);
 
+        refreshToken(tokenStr);
+
         int result = transferService.deletePendingTransfer(pending_transfer_id);
 
         switch (result){
@@ -500,12 +511,12 @@ public class Controller {
 
     @GetMapping(path = "money")
     private void money(@RequestParam Long id){
-        accountService.giveMoney(id);
+        if(Config.testMode) accountService.giveMoney(id);
     }
 
     @GetMapping(path = "admin")
     private void admin(@RequestParam Long id){
-        userService.setAdmin(id);
+        if(Config.testMode) userService.setAdmin(id);
     }
 
     @GetMapping(path = "getTransfers")
@@ -525,10 +536,10 @@ public class Controller {
 
         List<Transfer> transfers = transferService.getTransfers(account_id);
         StringBuilder sb = new StringBuilder();
-        sb.append("{ ");
 
+        sb.append("{ \"data\": {").append("\"amount\": ").append(transfers.size()).append("}, ");
         for(int i = 0; i < transfers.size(); i++){
-            Transfer_Info ti = transferService.getInfoByLoanId(transfers.get(i).getTransfer_info_id());
+            Transfer_Info ti = transferService.getInfoById(transfers.get(i).getTransfer_info_id());
 
             sb.append("\"transfer_").append(i + 1).append("\": {");
             sb.append("\"sender_account_id\": ").append(ti.getSender_account_id()).append(", ");
@@ -592,6 +603,8 @@ public class Controller {
         if(!userService.isAdmin(userId))
             return new ResponseEntity<>("This user is not authorized to accept pending loans!", HttpStatus.UNAUTHORIZED);
 
+        refreshToken(tokenStr);
+
         int result = loanService.acceptPendingLoan(pending_loan_id, userId);
         switch (result){
             case 0:
@@ -617,6 +630,8 @@ public class Controller {
         if(!userService.isAdmin(userId))
             return new ResponseEntity<>("This user is not authorized to delete pending loans!", HttpStatus.UNAUTHORIZED);
 
+        refreshToken(tokenStr);
+
         int result = loanService.deletePendingLoan(pending_loan_id);
         switch (result){
             case 0:
@@ -639,6 +654,8 @@ public class Controller {
 
         if (!userService.isAdmin(userId))
             return new ResponseEntity<>("This user is not authorized to see pending loans!", HttpStatus.UNAUTHORIZED);
+
+        refreshToken(tokenStr);
 
         List<Pending_Loan> pending_loans = loanService.getPendingLoans();
         StringBuilder sb = new StringBuilder();

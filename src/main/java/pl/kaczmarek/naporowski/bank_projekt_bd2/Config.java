@@ -1,37 +1,51 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.Account;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.AccountRepository;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.Currency;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyRepository;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyService;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Transfer;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.TransferRepository;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Transfer_Info;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer.Transfer_InfoRepository;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.User.User;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.User.UserRepository;
-
+import org.springframework.core.env.Environment;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Properties;
 
 
 @Configuration
-public class Config {
+public class Config implements EnvironmentAware {
+
+    @Autowired
+    private static Environment environment;
+
+    public static final boolean testMode = true;
 
     @Bean
     public JavaMailSender getJavaMailSender()
     {
+        String login = environment.getProperty("mailSender.login");
+        String password = environment.getProperty("mailSender.password");
+
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         mailSender.setHost("smtp.gmail.com");
         mailSender.setPort(587);
 
-        mailSender.setUsername("bankappbd2@gmail.com");
-        mailSender.setPassword("ABC123!@#");
+        mailSender.setUsername(login);
+        mailSender.setPassword(password);
 
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");
@@ -42,7 +56,7 @@ public class Config {
                 new javax.mail.Authenticator(){
                     protected PasswordAuthentication getPasswordAuthentication() {
                         return new PasswordAuthentication(
-                                "bankappbd2@gmail.com", "ABC123!@#");// Specify the Username and the PassWord
+                                login, password);
                     }
                 });
         return mailSender;
@@ -50,38 +64,50 @@ public class Config {
 
 
     @Bean
-    CommandLineRunner commandLineRunner(CurrencyRepository currencyRepository, CurrencyService currencyService, UserRepository userRepository, AccountRepository accountRepository) {
+    CommandLineRunner commandLineRunner(CurrencyRepository currencyRepository, CurrencyService currencyService, UserRepository userRepository, AccountRepository accountRepository, Transfer_InfoRepository transferInfoRepository, TransferRepository transferRepository) {
       return args -> {
           Currency USD = new Currency("USD");
           Currency GBP = new Currency("GBP");
           Currency EUR = new Currency("EUR");
-          currencyRepository.saveAllAndFlush(
-                  List.of(USD, GBP, EUR)
-          );
-          currencyService.updateCurrencies();
 
-          User user = new User("Jan", "Kowalski", "admin", "21232f297a57a5a743894a0e4a801fc3");
-          user.setPermission_level(1);
+          // Login - admin         Password - admin
+          User admin = new User("Jan", "Kowalski", "admin", "21232f297a57a5a743894a0e4a801fc3");
+          admin.setPermission_level(1);
+          admin.setActivated(true);
+
+          // Login - test@test     Password - 12345
+          User user = new User("Adam", "Kowalczyk", "test@test", "827ccb0eea8a706c4c34a16891f84e7b");
           user.setActivated(true);
 
-          userRepository.save(user);
+          Account acc1 = new Account(2L);
+          acc1.setBalance_pln(2123.0);
+          acc1.setBalance_usd(1234.0);
+          acc1.setBalance_euro(4500.99);
+          acc1.setBalace_pound(199.55);
 
-          Account acc1 = new Account(1L);
-          Account acc2 = new Account(1L);
-          Account acc3 = new Account(1L);
+          Account acc2 = new Account(2L);
 
-          acc1.setBalance_pln(123.0);
-          acc1.setBalace_pound(12.3);
-          acc1.setBalance_usd(0.99);
+          Transfer_Info ti1 = new Transfer_Info(2L, 1L, 0L, 500.99, LocalDate.now().plusDays(1));
+          Transfer_Info ti2 = new Transfer_Info(2L, 1L, 1L, 123.33, LocalDate.now());
 
-          acc2.setBalance_pln(92139.0);
-          acc2.setBalance_euro(39.99);
+          Transfer t1 = new Transfer(1L);
+          Transfer t2 = new Transfer(2L);
 
-          acc3.setBalance_pln(21.37);
-          accountRepository.saveAll(List.of(
-                  acc1, acc2, acc3
-          ));
+          if(testMode){
+              currencyRepository.saveAllAndFlush(
+                      List.of(USD, GBP, EUR)
+              );
+              currencyService.updateCurrencies();
+              userRepository.saveAllAndFlush(List.of(admin, user));
+              accountRepository.saveAllAndFlush(List.of(acc1, acc2));
+              transferInfoRepository.saveAllAndFlush(List.of(ti1, ti2));
+              transferRepository.saveAllAndFlush(List.of(t1, t2));
+          }
       };
     }
 
+    @Override
+    public void setEnvironment(Environment environment) {
+        Config.environment = environment;
+    }
 }

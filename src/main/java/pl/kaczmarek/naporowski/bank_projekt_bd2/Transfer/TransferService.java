@@ -6,11 +6,8 @@ import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.Account;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Account.AccountService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.Currency;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.CurrencyService;
-import pl.kaczmarek.naporowski.bank_projekt_bd2.User.User;
-import pl.kaczmarek.naporowski.bank_projekt_bd2.User.UserService;
 
 import javax.transaction.Transactional;
-import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -163,7 +160,7 @@ public class TransferService {
         return pendingTransferRepository.findAll();
     }
 
-    public Transfer_Info getInfoByLoanId(Long id){
+    public Transfer_Info getInfoById(Long id){
         if(!transferRepository.existsById(id)) return null;
 
         Transfer t = transferRepository.getById(id);
