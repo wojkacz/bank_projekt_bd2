@@ -1,10 +1,11 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2.Transfer;
 
 import javax.persistence.*;
+import java.io.Serializable;
 
 @Entity
 @Table
-public class Transfer {
+public class Transfer implements Serializable {
 
     @Id
     @GeneratedValue(strategy =  GenerationType.IDENTITY)

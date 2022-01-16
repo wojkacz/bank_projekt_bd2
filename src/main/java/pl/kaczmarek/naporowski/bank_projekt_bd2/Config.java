@@ -87,11 +87,15 @@ public class Config implements EnvironmentAware {
 
           Account acc2 = new Account(2L);
 
-          Transfer_Info ti1 = new Transfer_Info(2L, 1L, 0L, 500.99, LocalDate.now().plusDays(1));
-          Transfer_Info ti2 = new Transfer_Info(2L, 1L, 1L, 123.33, LocalDate.now());
+          Transfer_Info ti1 = new Transfer_Info(2L, 1L, 0L, 500.99, LocalDate.now().minusDays(1));
+          Transfer_Info ti2 = new Transfer_Info(2L, 1L, 1L, 123.33, LocalDate.now().minusDays(3));
+          Transfer_Info ti3 = new Transfer_Info(1L, 2L, 2L, 15.0, LocalDate.now().minusDays(2));
+          Transfer_Info ti4 = new Transfer_Info(1L, 2L, 3L, 12345.67, LocalDate.now().minusDays(4));
 
           Transfer t1 = new Transfer(1L);
           Transfer t2 = new Transfer(2L);
+          Transfer t3 = new Transfer(3L);
+          Transfer t4 = new Transfer(4L);
 
           if(testMode){
               currencyRepository.saveAllAndFlush(
@@ -100,8 +104,8 @@ public class Config implements EnvironmentAware {
               currencyService.updateCurrencies();
               userRepository.saveAllAndFlush(List.of(admin, user));
               accountRepository.saveAllAndFlush(List.of(acc1, acc2));
-              transferInfoRepository.saveAllAndFlush(List.of(ti1, ti2));
-              transferRepository.saveAllAndFlush(List.of(t1, t2));
+              transferInfoRepository.saveAllAndFlush(List.of(ti1, ti2, ti3, ti4));
+              transferRepository.saveAllAndFlush(List.of(t1, t2, t3, t4));
           }
       };
     }

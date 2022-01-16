@@ -26,6 +26,7 @@ import pl.kaczmarek.naporowski.bank_projekt_bd2.User.UserService;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -351,6 +352,14 @@ public class Controller {
         }
     }
 
+    @PostMapping(path = "exchangeCurrency")
+    private ResponseEntity<String> exchangeCurrency(@RequestParam String tokenStr, @RequestParam Long accountID, @RequestParam Double amount, @RequestParam String currencyName){
+
+        // TODO exchange
+
+        return new ResponseEntity<>("", HttpStatus.OK);
+    }
+
     @PostMapping(path = "updateCurrency")
     private ResponseEntity<String> updateCurrency(@RequestParam String tokenStr, @RequestParam Long id, String name, Double sellVal, Double buyVal){
         Long userId = tokenService.getUserIdFromToken(tokenStr);
@@ -377,7 +386,7 @@ public class Controller {
     }
 
     @PostMapping(path = "sendTransfer")
-    private ResponseEntity<String> sendTransfer(@RequestParam String tokenStr, @RequestParam Long sender_account_id, @RequestParam Long receiver_account_id, @RequestParam Long currency_id, @RequestParam Double amount){
+    private ResponseEntity<String> sendTransfer(@RequestParam String tokenStr, @RequestParam Long sender_account_id, @RequestParam Long receiver_account_id, @RequestParam String currencyName, @RequestParam Double amount){
         Long userId = tokenService.getUserIdFromToken(tokenStr);
 
         if(userId == null)
@@ -391,14 +400,21 @@ public class Controller {
         if(!acc.getUser_id().equals(userId))
             return new ResponseEntity<>("This is not your account!", HttpStatus.UNAUTHORIZED);
 
+        Long currency_id;
+        if(currencyName.equals("PLN")) currency_id = 0L;
+        else currency_id = currencyService.getIDByName(currencyName);
+
+        if(sender_account_id.equals(receiver_account_id))
+            return new ResponseEntity<>("You cant send transfer to the same account!", HttpStatus.CONFLICT);
+
         int result = transferService.makeTransfer(sender_account_id, receiver_account_id, currency_id, amount, LocalDate.now());
         switch(result){
             case 0:
                 return new ResponseEntity<>("Transfer sent successfully!", HttpStatus.OK);
             case 1:
-                return new ResponseEntity<>("Incorrect sender ID!", HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>("Incorrect sender ID!", HttpStatus.SEE_OTHER);
             case 2:
-                return new ResponseEntity<>("Incorrect receiver ID!", HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>("Incorrect receiver ID!", HttpStatus.CONFLICT);
             case 3:
                 return new ResponseEntity<>("Incorrect transfer value!", HttpStatus.METHOD_NOT_ALLOWED);
             case 4:
@@ -406,7 +422,7 @@ public class Controller {
             case 5:
                 return new ResponseEntity<>("Transfer value cant be higher than account balance!", HttpStatus.NOT_ACCEPTABLE);
             case 6:
-                return new ResponseEntity<>("Incorrect currency [Has to be one of GPB,USD or EUR]!", HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>("Incorrect currency [Has to be one of GPB,USD or EUR]!", HttpStatus.BAD_REQUEST);
             case 7:
                 return new ResponseEntity<>("Transfer added to pending list!", HttpStatus.ACCEPTED);
             default:
@@ -535,6 +551,7 @@ public class Controller {
             return new ResponseEntity<>("This is not your account!", HttpStatus.UNAUTHORIZED);
 
         List<Transfer> transfers = transferService.getTransfers(account_id);
+        transfers.sort(Comparator.comparing(Transfer::getTransfer_id).reversed());
         StringBuilder sb = new StringBuilder();
 
         sb.append("{ \"data\": {").append("\"amount\": ").append(transfers.size()).append("}, ");

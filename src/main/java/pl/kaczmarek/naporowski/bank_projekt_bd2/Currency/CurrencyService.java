@@ -112,6 +112,12 @@ public class CurrencyService {
         return 0;
     }
 
+    public Long getIDByName(String name){
+        Optional<Currency> currencyOptional = currencyRepository.findByName(name);
+        if(currencyOptional.isEmpty()) return null;
+        return currencyOptional.get().getCurrency_id();
+    }
+
     public int updateCurrency(Long id, String name, Double sellVal, Double buyVal){
         if(!currencyRepository.existsById(id))
             return 1; // nie istnieje
