@@ -2,9 +2,15 @@ package pl.kaczmarek.naporowski.bank_projekt_bd2.Account;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import pl.kaczmarek.naporowski.bank_projekt_bd2.Currency.Currency;
 
+import javax.transaction.Transactional;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class AccountService {
@@ -52,6 +58,94 @@ public class AccountService {
         }
         return 1; // Podane konto nie istnieje
 
+    }
+
+    @Transactional
+    public int exchangeCurrency(Long account_id, Double amount, Currency from, Currency to){
+        Account account = accountRepository.getById(account_id);
+
+        DecimalFormat df = new DecimalFormat("0.00", new DecimalFormatSymbols(Locale.ENGLISH));
+        df.setRoundingMode(RoundingMode.DOWN);
+        amount = Double.parseDouble(df.format(amount));
+
+        if(from == null) from = new Currency("PLN");
+        else if(to == null) to = new Currency("PLN");
+
+        switch(from.getName()){
+            case "PLN":
+                if(account.getBalance_pln() < amount)
+                    return 1;
+                break;
+            case "USD":
+                if(account.getBalance_usd() < amount)
+                    return 1;
+                break;
+            case "EUR":
+                if(account.getBalance_euro() < amount)
+                    return 1;
+                break;
+            case "GBP":
+                if(account.getBalace_pound() < amount)
+                    return 1;
+                break;
+        }
+
+        Double price;
+        double afterExchange;
+
+        if(to.getName().equals("PLN")) {
+            price = from.getBuy_price();
+            afterExchange = amount * price;
+        }
+
+        else if(from.getName().equals("PLN")) {
+            price = to.getSell_price();
+            afterExchange = amount * price;
+        }
+
+        else {
+            price = from.getBuy_price();
+            afterExchange = amount * price;
+
+            price = to.getSell_price();
+            afterExchange = afterExchange * price;
+        }
+
+        afterExchange = Double.parseDouble(df.format(afterExchange));
+        if(afterExchange < 0.01) return 2;
+
+        switch(from.getName()){
+            case "PLN":
+                account.setBalance_pln(account.getBalance_pln() - amount);
+                break;
+            case "USD":
+                account.setBalance_usd(account.getBalance_usd() - amount);
+                break;
+            case "EUR":
+                account.setBalance_euro(account.getBalance_euro() - amount);
+                break;
+            case "GBP":
+                account.setBalace_pound(account.getBalace_pound() - amount);
+                break;
+        }
+
+        switch(to.getName()){
+            case "PLN":
+                account.setBalance_pln(account.getBalance_pln() + afterExchange);
+                break;
+            case "USD":
+                account.setBalance_usd(account.getBalance_usd() + afterExchange);
+                break;
+            case "EUR":
+                account.setBalance_euro(account.getBalance_euro() + afterExchange);
+                break;
+            case "GBP":
+                account.setBalace_pound(account.getBalace_pound() + afterExchange);
+                break;
+        }
+
+        accountRepository.saveAndFlush(account);
+        return 0;
     }
 
     public Account getAccountByID(Long Id){

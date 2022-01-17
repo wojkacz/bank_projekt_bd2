@@ -172,7 +172,7 @@ public class Controller {
             case 7:
                 return new ResponseEntity<>("Password Hash too short!", HttpStatus.NOT_ACCEPTABLE);
             default:
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -187,7 +187,7 @@ public class Controller {
                  return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
 
             default: // Inne
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -263,7 +263,7 @@ public class Controller {
                 return new ResponseEntity<>("Value of the account is not zero!", HttpStatus.EXPECTATION_FAILED);
 
             default: // Inne
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -286,7 +286,7 @@ public class Controller {
                 return new ResponseEntity<>("Could not get currency values!", HttpStatus.EXPECTATION_FAILED);
 
             default: // Inne
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -326,7 +326,7 @@ public class Controller {
             case 1:
                 return new ResponseEntity<>("Currency with that name already exist!", HttpStatus.FOUND);
             default:
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
 
     }
@@ -348,16 +348,55 @@ public class Controller {
             case 1:
                 return new ResponseEntity<>("Currency with that id does not exist!", HttpStatus.NOT_FOUND);
             default:
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 
     @PostMapping(path = "exchangeCurrency")
-    private ResponseEntity<String> exchangeCurrency(@RequestParam String tokenStr, @RequestParam Long accountID, @RequestParam Double amount, @RequestParam String currencyName){
+    private ResponseEntity<String> exchangeCurrency(@RequestParam String tokenStr, @RequestParam Long accountID, @RequestParam Double amount, @RequestParam String currencyFromName, @RequestParam String currencyToName){
 
-        // TODO exchange
+        Long userId = tokenService.getUserIdFromToken(tokenStr);
 
-        return new ResponseEntity<>("", HttpStatus.OK);
+        if(userId == null)
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        refreshToken(tokenStr);
+
+        Account acc = accountService.getAccountByID(accountID);
+        if(acc == null) return new ResponseEntity<>("That account does not exist!", HttpStatus.EXPECTATION_FAILED);
+
+        if(!acc.getUser_id().equals(userId))
+            return new ResponseEntity<>("This is not your account!", HttpStatus.UNAUTHORIZED);
+
+        if(currencyFromName.equals(currencyToName))
+            return new ResponseEntity<>("Cant exchange the same currencies!", HttpStatus.CONFLICT);
+
+        Long currencyFromId;
+        if(currencyFromName.equals("PLN")) currencyFromId = 0L;
+        else currencyFromId = currencyService.getIDByName(currencyFromName);
+        if(currencyFromId == null) return new ResponseEntity<>("Incorrect From currency [Has to be one of PLN, GBP, USD or EUR]!", HttpStatus.BAD_REQUEST);
+
+        Long currencyToId;
+        if(currencyToName.equals("PLN")) currencyToId = 0L;
+        else currencyToId = currencyService.getIDByName(currencyToName);
+        if(currencyToId == null) return new ResponseEntity<>("Incorrect To currency [Has to be one of PLN, GBP, USD or EUR]!", HttpStatus.BAD_REQUEST);
+
+        if(amount < 0.01) return new ResponseEntity<>("Amount to be exchanged cant be smaller than 0.01!", HttpStatus.NOT_ACCEPTABLE);
+
+        Currency toCur = currencyService.getCurrencyById(currencyToId);
+        Currency fromCur = currencyService.getCurrencyById(currencyFromId);
+
+        int result = accountService.exchangeCurrency(accountID, amount, fromCur, toCur);
+        switch(result){
+            case 0:
+                return new ResponseEntity<>("Currency exchanged successfully!", HttpStatus.OK);
+            case 1:
+                return new ResponseEntity<>("Insufficient balance!", HttpStatus.METHOD_NOT_ALLOWED);
+            case 2:
+                return new ResponseEntity<>("Amount after exchange cant be smaller than 0.01!", HttpStatus.NOT_ACCEPTABLE);
+            default:
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
+        }
     }
 
     @PostMapping(path = "updateCurrency")
@@ -381,7 +420,7 @@ public class Controller {
             case 3:
                 return new ResponseEntity<>("Value is too small!", HttpStatus.EXPECTATION_FAILED);
             default:
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -404,6 +443,7 @@ public class Controller {
         if(currencyName.equals("PLN")) currency_id = 0L;
         else currency_id = currencyService.getIDByName(currencyName);
 
+
         if(sender_account_id.equals(receiver_account_id))
             return new ResponseEntity<>("You cant send transfer to the same account!", HttpStatus.CONFLICT);
 
@@ -422,11 +462,11 @@ public class Controller {
             case 5:
                 return new ResponseEntity<>("Transfer value cant be higher than account balance!", HttpStatus.NOT_ACCEPTABLE);
             case 6:
-                return new ResponseEntity<>("Incorrect currency [Has to be one of GPB,USD or EUR]!", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>("Incorrect currency [Has to be one of PLN, GPB, USD or EUR]!", HttpStatus.BAD_REQUEST);
             case 7:
                 return new ResponseEntity<>("Transfer added to pending list!", HttpStatus.ACCEPTED);
             default:
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -497,7 +537,7 @@ public class Controller {
             case 7:
                 return new ResponseEntity<>("Incorrect pending transfer id!", HttpStatus.EXPECTATION_FAILED);
             default:
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -606,7 +646,7 @@ public class Controller {
                 return new ResponseEntity<>("This user already has a loan!", HttpStatus.FORBIDDEN);
 
             default:
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -633,7 +673,7 @@ public class Controller {
             case 3:
                 return new ResponseEntity<>("Account not found!", HttpStatus.NOT_FOUND);
             default:
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -658,7 +698,7 @@ public class Controller {
             case 2:
                 return new ResponseEntity<>("Loan informations not found!", HttpStatus.NOT_FOUND);
             default:
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -766,7 +806,7 @@ public class Controller {
             case 7:
                 return new ResponseEntity<>("Successfully paid installement, loan has been bought back!", HttpStatus.OK);
             default:
-                throw new IllegalStateException("Unknown error!");
+                return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
     }
 }
