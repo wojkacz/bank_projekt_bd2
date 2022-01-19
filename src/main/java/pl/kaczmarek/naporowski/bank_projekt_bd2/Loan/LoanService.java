@@ -30,13 +30,12 @@ public class LoanService {
     public int takeLoan(Long account_id, Double amount, int loan_length, LocalDate date){
         Account acc = accountService.getAccountByID(account_id);
         if(acc == null) return 1; // Konto nie istnieje
-        if(amount < 1000.0) return 2; // Kwota zbyt niska
-        if(loan_length < 1) return 3; // Za krotki czas pozyczki
+        if(amount < 1000.0 || amount > 100000.0) return 2; // Zla kwota
+        if(loan_length < 1 || loan_length > 24) return 3; // Zly czas pozyczki
 
-        List<Loan_Info> loanInfoList = loanInfoRepository.findAll();
-        for(Loan_Info li : loanInfoList){
-            if(li.getAccount_id().equals(account_id))
-                return 4; // Juz ma pozyczke lub zlozyl prosbe
+        for(Loan l : loanRepository.findAll()){
+            if(loanInfoRepository.getById(l.getLoan_info_id()).getAccount_id().equals(account_id))
+                return 4; // Juz ma
         }
 
         Loan_Info loan_info = new Loan_Info(account_id, amount, loan_length, date);
@@ -55,6 +54,12 @@ public class LoanService {
         if(!loanInfoRepository.existsById(pending_loan.getLoan_info_id()))
             return 2; // Nie znaleziono informacji
         Loan_Info loan_info = loanInfoRepository.getById(pending_loan.getLoan_info_id());
+
+        Long accId = loanInfoRepository.getById(pending_loan.getLoan_info_id()).getAccount_id();
+        for(Loan l : loanRepository.findAll()){
+            if(loanInfoRepository.getById(l.getLoan_info_id()).getAccount_id().equals(accId))
+                return 4;
+        }
 
         if(accountService.addBalanceToAccount(loan_info.getAccount_id(), loan_info.getAmount()) != 0)
             return 3; // Nie znaleziono konta

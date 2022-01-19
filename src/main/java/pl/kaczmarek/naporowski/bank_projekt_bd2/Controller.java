@@ -400,24 +400,26 @@ public class Controller {
     }
 
     @PostMapping(path = "updateCurrency")
-    private ResponseEntity<String> updateCurrency(@RequestParam String tokenStr, @RequestParam Long id, String name, Double sellVal, Double buyVal){
+    private ResponseEntity<String> updateCurrency(@RequestParam String tokenStr, @RequestParam String name, Double sellVal, Double buyVal){
         Long userId = tokenService.getUserIdFromToken(tokenStr);
 
         if(userId == null)
-            return new ResponseEntity<>("That token does not exist!", HttpStatus.EXPECTATION_FAILED);
+            return new ResponseEntity<>("That token does not exist!", HttpStatus.UNAUTHORIZED);
 
         if(!userService.isAdmin(userId))
             return new ResponseEntity<>("This user is not authorized to update currencies!", HttpStatus.UNAUTHORIZED);
 
-        int result = currencyService.updateCurrency(id, name, sellVal, buyVal);
+        Long id;
+        if(name.equals("PLN")) id = 0L;
+        else id = currencyService.getIDByName(name);
+
+        int result = currencyService.updateCurrency(id, sellVal, buyVal);
         switch(result){
             case 0:
                 return new ResponseEntity<>("Currency updated successfully!", HttpStatus.OK);
             case 1:
                 return new ResponseEntity<>("Currency with that id does not exist!", HttpStatus.NOT_FOUND);
             case 2:
-                return new ResponseEntity<>("Currency with that name already exist!", HttpStatus.FOUND);
-            case 3:
                 return new ResponseEntity<>("Value is too small!", HttpStatus.EXPECTATION_FAILED);
             default:
                 return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
@@ -484,17 +486,20 @@ public class Controller {
 
         List<Pending_Transfer> pending_transfers = transferService.getPendingTransfers();
         StringBuilder sb = new StringBuilder();
-        sb.append("{ ");
 
+        sb.append("{ \"data\": {").append("\"amount\": ").append(pending_transfers.size()).append("}, ");
         for(int i = 0; i < pending_transfers.size(); i++){
-            Transfer_Info ti = transferService.getInfoByPendingId(pending_transfers.get(i).getTransfer_info_id());
+            Transfer_Info ti = transferService.getInfoByPendingId(pending_transfers.get(i).getPending_transfer_id());
+
+            String curName;
+            if(ti.getCurrency_id().equals(0L)) curName = "PLN";
+            else curName = currencyService.getCurrencyById(ti.getCurrency_id()).getName();
 
             sb.append("\"pending_transfer_").append(i + 1).append("\": {");
             sb.append("\"pending_transfer_id\": ").append(pending_transfers.get(i).getPending_transfer_id()).append(", ");
-            sb.append("\"transfer_info_id\": ").append(ti.getTransfer_info_id()).append(", ");
             sb.append("\"sender_account_id\": ").append(ti.getSender_account_id()).append(", ");
             sb.append("\"receiver_account_id\": ").append(ti.getReceiver_account_id()).append(", ");
-            sb.append("\"currency_id\": ").append(ti.getCurrency_id()).append(", ");
+            sb.append("\"currency\": ").append(curName).append(", ");
             sb.append("\"amount\": ").append(ti.getAmount()).append(", ");
             sb.append("\"date\": \"").append(ti.getDate().toString()).append("\" ");
 
@@ -523,18 +528,13 @@ public class Controller {
             case 0:
                 return new ResponseEntity<>("Transfer sent successfully!", HttpStatus.OK);
             case 1:
-                return new ResponseEntity<>("Incorrect sender ID!", HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>("Incorrect Pending Transfer ID!", HttpStatus.NOT_FOUND);
             case 2:
-                return new ResponseEntity<>("Incorrect receiver ID!", HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>("Too low balance", HttpStatus.FORBIDDEN);
             case 3:
-                return new ResponseEntity<>("Incorrect transfer value!", HttpStatus.METHOD_NOT_ALLOWED);
             case 4:
-                return new ResponseEntity<>("Currency id is incorrect!", HttpStatus.FORBIDDEN);
+                return new ResponseEntity<>("Currency id is incorrect!", HttpStatus.NOT_FOUND);
             case 5:
-                return new ResponseEntity<>("Transfer value cant be higher than account balance!", HttpStatus.NOT_ACCEPTABLE);
-            case 6:
-                return new ResponseEntity<>("Transfer added to pending list!", HttpStatus.ACCEPTED);
-            case 7:
                 return new ResponseEntity<>("Incorrect pending transfer id!", HttpStatus.EXPECTATION_FAILED);
             default:
                 return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
@@ -596,7 +596,7 @@ public class Controller {
 
         sb.append("{ \"data\": {").append("\"amount\": ").append(transfers.size()).append("}, ");
         for(int i = 0; i < transfers.size(); i++){
-            Transfer_Info ti = transferService.getInfoById(transfers.get(i).getTransfer_info_id());
+            Transfer_Info ti = transferService.getInfoById(transfers.get(i).getTransfer_id());
 
             sb.append("\"transfer_").append(i + 1).append("\": {");
             sb.append("\"sender_account_id\": ").append(ti.getSender_account_id()).append(", ");
@@ -637,10 +637,10 @@ public class Controller {
                 return new ResponseEntity<>("Account does not exist!", HttpStatus.NOT_FOUND);
 
             case 2:
-                return new ResponseEntity<>("Value of Loan too low!", HttpStatus.EXPECTATION_FAILED);
+                return new ResponseEntity<>("Bad Loan Value!", HttpStatus.EXPECTATION_FAILED);
 
             case 3:
-                return new ResponseEntity<>("Loan time too short!", HttpStatus.FORBIDDEN);
+                return new ResponseEntity<>("Loan time Incorrect!", HttpStatus.EXPECTATION_FAILED);
 
             case 4:
                 return new ResponseEntity<>("This user already has a loan!", HttpStatus.FORBIDDEN);
@@ -667,11 +667,13 @@ public class Controller {
             case 0:
                 return new ResponseEntity<>("Loan accepted!", HttpStatus.OK);
             case 1:
-                return new ResponseEntity<>("Pending Loan ID is incorrect!", HttpStatus.FORBIDDEN);
+                return new ResponseEntity<>("Pending Loan ID is incorrect!", HttpStatus.CONFLICT);
             case 2:
                 return new ResponseEntity<>("Loan informations not found!", HttpStatus.NOT_FOUND);
             case 3:
                 return new ResponseEntity<>("Account not found!", HttpStatus.NOT_FOUND);
+            case 4:
+                return new ResponseEntity<>("This user already have a loan!", HttpStatus.FORBIDDEN);
             default:
                 return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
         }
@@ -716,8 +718,8 @@ public class Controller {
 
         List<Pending_Loan> pending_loans = loanService.getPendingLoans();
         StringBuilder sb = new StringBuilder();
-        sb.append("{ ");
 
+        sb.append("{ \"data\": {").append("\"amount\": ").append(pending_loans.size()).append("}, ");
         for(int i = 0; i < pending_loans.size(); i++){
             Loan_Info li = loanService.getInfoByPendingID(pending_loans.get(i).getLoan_info_id());
             Account account = accountService.getAccountByID(li.getAccount_id());

@@ -118,25 +118,18 @@ public class CurrencyService {
         return currencyOptional.get().getCurrency_id();
     }
 
-    public int updateCurrency(Long id, String name, Double sellVal, Double buyVal){
+    public int updateCurrency(Long id, Double sellVal, Double buyVal){
         if(!currencyRepository.existsById(id))
             return 1; // nie istnieje
 
         Currency currency = currencyRepository.getById(id);
-        if(name != null) {
-            Optional<Currency> currencyOptional = currencyRepository.findByName(name);
-            if(currencyOptional.isEmpty())
-                currency.setName(name);
-            return 2; // juz istnieje o takiej nazwie
-        }
-
         if(sellVal != null) {
-            if (sellVal <= 0.0) return 3; // za mala wartosc
+            if (sellVal <= 0.0) return 2; // za mala wartosc
             currency.setSell_price(sellVal);
         }
 
         if(buyVal != null) {
-            if (buyVal <= 0.0) return 3; // za mala wartosc
+            if (buyVal <= 0.0) return 2; // za mala wartosc
             currency.setBuy_price(buyVal);
         }
 

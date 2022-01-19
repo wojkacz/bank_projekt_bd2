@@ -148,7 +148,7 @@ public class TransferService {
     public int acceptTransfer(Long pending_transfer_id, Long employee_id){
         Optional<Pending_Transfer> pendingOptional = pendingTransferRepository.findPendingTransferByID(pending_transfer_id);
         if(pendingOptional.isEmpty())
-            return 7;
+            return 5;
 
         Pending_Transfer pending_transfer = pendingOptional.get();
         int result = sendTransfer(pending_transfer.getTransfer_info_id(), employee_id);
