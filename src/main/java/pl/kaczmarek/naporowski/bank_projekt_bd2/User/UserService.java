@@ -1,7 +1,6 @@
 package pl.kaczmarek.naporowski.bank_projekt_bd2.User;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Code.CodeService;
 import pl.kaczmarek.naporowski.bank_projekt_bd2.Email.EmailService;
@@ -10,7 +9,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.Random;
-import java.util.function.Consumer;
 
 @Service
 public class UserService {

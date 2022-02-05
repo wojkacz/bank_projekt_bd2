@@ -86,15 +86,4 @@ public class CodeService {
             sb.append(random.nextInt(10));
         return sb.toString();
     }
-
-    /*
-    Random random = new Random();
-    StringBuilder actCode = new StringBuilder();
-
-    for(int i = 0; i < 4; i++)
-        actCode.append(random.nextInt(10));
-
-    user.setActivationCode(actCode.toString());
-    emailService.send(user.getLogin(), "Hi " + name + "!\nVerification Code is: " + actCode);
-     */
 }

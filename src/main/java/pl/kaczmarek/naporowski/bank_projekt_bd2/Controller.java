@@ -137,7 +137,6 @@ public class Controller {
 
             default: // Inne
                 return new ResponseEntity<>("Unknown Error!", HttpStatus.BAD_GATEWAY);
-                //throw new IllegalStateException("Unknown error!");
         }
     }
 
